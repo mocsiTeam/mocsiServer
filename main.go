@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/mocsiTeam/mocsiServer/db"
@@ -9,10 +10,10 @@ import (
 func init() {
 	err := db.CreateDB()
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 	}
 }
 
 func main() {
-
+	fmt.Println("hi")
 }

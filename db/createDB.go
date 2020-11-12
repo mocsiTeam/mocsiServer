@@ -12,19 +12,21 @@ type database struct {
 	name string
 }
 
-const (
-	user    = "postgres"
-	pass    = "123"
-	host    = "localhost"
-	port    = "5433"
-	sslmode = "disable"
-	dbname  = "mocsidb"
-)
-
 func connectPG() (*sql.DB, error) {
 	conninfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s sslmode=%s",
 		host, port, user, pass, sslmode)
+	db, err := sql.Open("postgres", conninfo)
+	if err != nil {
+		return db, err
+	}
+	return db, nil
+}
+
+func connectPGinDB() (*sql.DB, error) {
+	conninfo := fmt.Sprintf("host=%s port=%s user=%s "+
+		"password=%s sslmode=%s dbname=%s",
+		host, port, user, pass, sslmode, dbname)
 	db, err := sql.Open("postgres", conninfo)
 	if err != nil {
 		return db, err
@@ -58,14 +60,37 @@ func checkDB(db *sql.DB) (bool, error) {
 }
 
 func CreateDB() error {
-	db, err := connectPG()
+	pg, err := connectPG()
+	defer pg.Close()
 	if err != nil {
 		return err
 	}
-	if ok, err := checkDB(db); ok && err != nil {
-		//TODO: Write code to create db and tables
-	} else {
+	ok, err := checkDB(pg)
+	if err != nil {
 		return err
+	}
+	if !ok {
+		_, err = pg.Exec("CREATE DATABASE " + dbname)
+		if err != nil {
+			return err
+		}
+		pg.Close()
+		db, err := connectPGinDB()
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		execsDB := []string{createTableRoles, createTableGroups,
+			createTableRoom, createTableAccessLevel,
+			creataTableUsers, createTableRoomAccess,
+			creataTableStatsRoom, createTableStatsUser}
+		for _, exec := range execsDB {
+			_, err = db.Exec(exec)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+		}
 	}
 	return nil
 }
