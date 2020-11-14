@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/mocsiTeam/mocsiServer/db"
@@ -15,5 +14,5 @@ func init() {
 }
 
 func main() {
-	fmt.Println("hi")
+
 }
