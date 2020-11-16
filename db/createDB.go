@@ -6,6 +6,8 @@ import (
 	"log"
 
 	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type database struct {
@@ -16,17 +18,6 @@ func connectPG() (*sql.DB, error) {
 	conninfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s sslmode=%s",
 		host, port, user, pass, sslmode)
-	db, err := sql.Open("postgres", conninfo)
-	if err != nil {
-		return db, err
-	}
-	return db, nil
-}
-
-func connectPGinDB() (*sql.DB, error) {
-	conninfo := fmt.Sprintf("host=%s port=%s user=%s "+
-		"password=%s sslmode=%s dbname=%s",
-		host, port, user, pass, sslmode, dbname)
 	db, err := sql.Open("postgres", conninfo)
 	if err != nil {
 		return db, err
@@ -61,10 +52,16 @@ func checkDB(db *sql.DB) (bool, error) {
 
 func CreateDB() error {
 	pg, err := connectPG()
-	defer pg.Close()
 	if err != nil {
 		return err
 	}
+	defer func() error {
+		err := pg.Close()
+		if err != nil {
+			return err
+		}
+		return nil
+	}()
 	ok, err := checkDB(pg)
 	if err != nil {
 		return err
@@ -74,23 +71,25 @@ func CreateDB() error {
 		if err != nil {
 			return err
 		}
-		pg.Close()
-		db, err := connectPGinDB()
+		err = pg.Close()
 		if err != nil {
 			return err
 		}
-		defer db.Close()
-		execsDB := []string{createTableRoles, createTableGroups,
-			createTableRoom, createTableAccessLevel,
-			creataTableUsers, createTableRoomAccess,
-			creataTableStatsRoom, createTableStatsUser}
-		for _, exec := range execsDB {
-			_, err = db.Exec(exec)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
+		dsn := fmt.Sprintf("host=%s port=%s user=%s "+
+			"password=%s sslmode=%s dbname=%s",
+			host, port, user, pass, sslmode, dbname)
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err != nil {
+			return err
 		}
+		db.AutoMigrate(&Roles{})
+		db.AutoMigrate(&Groups{})
+		db.AutoMigrate(&AccessLevel{})
+		db.AutoMigrate(&Users{})
+		db.AutoMigrate(&UserGroups{})
+		db.AutoMigrate(&RoomAccess{})
+		db.AutoMigrate(&StatsRoom{})
+		db.AutoMigrate(&StatsUser{})
 	}
 	return nil
 }
