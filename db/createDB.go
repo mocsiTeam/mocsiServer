@@ -90,6 +90,13 @@ func CreateDB() error {
 		db.AutoMigrate(&RoomAccess{})
 		db.AutoMigrate(&StatsRoom{})
 		db.AutoMigrate(&StatsUser{})
+		for _, role := range roles {
+			db.Create(&role)
+		}
+		for _, alevel := range alevels {
+			db.Create(&alevel)
+		}
+
 	}
 	return nil
 }
