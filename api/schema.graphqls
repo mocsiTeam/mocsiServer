@@ -1,0 +1,21 @@
+type User {
+    id: ID!
+    nickname: String!
+    firstname: String!
+    lastName: String!
+    email: String!
+    role: String!
+    groups: [String!]!
+}
+
+type NewUser {
+    nickname: String!
+    firstname: String!
+    lastName: String!
+    email: String!
+    password: String!
+}
+
+type Mutation {
+    createUser(input: NewUser!) User!
+}
