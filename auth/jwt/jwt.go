@@ -11,10 +11,10 @@ var (
 	SecretKey = []byte("secret")
 )
 
-func GenerateToken(username string) (string, error) {
+func GenerateToken(nickname string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
-	claims["username"] = username
+	claims["nickname"] = nickname
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	tokenString, err := token.SignedString(SecretKey)
 	if err != nil {
@@ -29,7 +29,7 @@ func ParseToken(tokenStr string) (string, error) {
 		return SecretKey, nil
 	})
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		username := claims["username"].(string)
+		username := claims["nickname"].(string)
 		return username, nil
 	}
 	return "", err

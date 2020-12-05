@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -19,12 +20,15 @@ func Connector() *gorm.DB {
 	return db
 }
 
-func (user *Users) Create(db *gorm.DB) (*gorm.DB, error) {
-	if user.Check(db) == nil {
-		return nil, &NameAlredyExists{}
+func (user *Users) Create(db *gorm.DB) error {
+	if err := db.Select("nick_name").Where("nick_name = ?", user.NickName).First(&user).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
+		return &NameAlredyExists{}
+	} else if err := db.Select("email").Where("email = ?", user.Email).First(&user).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
+		return &EmailAlredyExists{}
+	} else if err := db.Create(&user).Error; err != nil {
+		return err
 	}
-	//TODO: check email
-	return db.Create(&user), nil
+	return nil
 }
 
 func (user *Users) GetAll(db *gorm.DB) []Users {
@@ -34,16 +38,12 @@ func (user *Users) GetAll(db *gorm.DB) []Users {
 }
 
 func (user *Users) Check(db *gorm.DB) error {
-	result := db.Select("ID", "nick_name").Find(&user)
-	if result.Error != nil {
-		return result.Error
-	}
-	return nil
+	err := db.Select("ID", "nick_name").Where("nick_name = ?", user.NickName).First(&user).Error
+	return err
 }
 func (user *Users) Authenticate(db *gorm.DB) bool {
 	pass := user.Pass
-	result := db.Select("Pass").Find(&user)
-	if result.Error != nil {
+	if result := db.Select("Pass").Where("nick_name = ?", user.NickName).First(&user); result.Error != nil {
 		log.Println(result.Error)
 		return false
 	}
@@ -63,4 +63,10 @@ type NameAlredyExists struct{}
 
 func (m *NameAlredyExists) Error() string {
 	return "name alredy exists"
+}
+
+type EmailAlredyExists struct{}
+
+func (m *EmailAlredyExists) Error() string {
+	return "email alredy exists"
 }

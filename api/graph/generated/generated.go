@@ -273,7 +273,7 @@ input NewUser {
   password: String!
   nickname: String!
   firstname: String!
-  lastName: String!
+  lastname: String!
 }
 
 input RefreshTokenInput{
@@ -286,7 +286,7 @@ type Query {
 }
 
 input Login {
-  username: String!
+  nickname: String!
   password: String!
 }
 
@@ -2024,11 +2024,11 @@ func (ec *executionContext) unmarshalInputLogin(ctx context.Context, obj interfa
 
 	for k, v := range asMap {
 		switch k {
-		case "username":
+		case "nickname":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nickname"))
+			it.Nickname, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2084,11 +2084,11 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 			if err != nil {
 				return it, err
 			}
-		case "lastName":
+		case "lastname":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastName"))
-			it.LastName, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastname"))
+			it.Lastname, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}

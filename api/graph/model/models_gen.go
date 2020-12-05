@@ -3,7 +3,7 @@
 package model
 
 type Login struct {
-	Username string `json:"username"`
+	Nickname string `json:"nickname"`
 	Password string `json:"password"`
 }
 
@@ -12,7 +12,7 @@ type NewUser struct {
 	Password  string `json:"password"`
 	Nickname  string `json:"nickname"`
 	Firstname string `json:"firstname"`
-	LastName  string `json:"lastName"`
+	Lastname  string `json:"lastname"`
 }
 
 type RefreshTokenInput struct {

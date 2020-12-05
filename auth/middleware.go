@@ -34,8 +34,7 @@ func Middleware() func(http.Handler) http.Handler {
 			}
 
 			user := db.Users{NickName: username}
-			err = user.Check(DB)
-			if err != nil {
+			if user.Check(DB) != nil {
 				next.ServeHTTP(w, r)
 				return
 			}

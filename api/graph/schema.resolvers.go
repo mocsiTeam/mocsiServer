@@ -23,11 +23,13 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 		Email:     input.Email,
 		NickName:  input.Nickname,
 		FirstName: input.Firstname,
-		LastName:  input.LastName,
+		LastName:  input.Lastname,
 		Pass:      input.Password,
 		RoleID:    3,
 	}
-	newUser.Create(DB)
+	if err := newUser.Create(DB); err != nil {
+		return "", err
+	}
 	token, err := jwt.GenerateToken(newUser.NickName)
 	if err != nil {
 		return "", err
@@ -37,7 +39,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
 	var user = db.Users{
-		NickName: input.Username,
+		NickName: input.Nickname,
 		Pass:     input.Password,
 	}
 	if correct := user.Authenticate(DB); !correct {
