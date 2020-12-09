@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -21,6 +22,11 @@ func Connector() *gorm.DB {
 }
 
 func (user *Users) Create(db *gorm.DB) error {
+	var err error
+	user.Pass, err = HashPassword(user.Pass)
+	if err != nil {
+		return err
+	}
 	if err := db.Select("nick_name").Where("nick_name = ?", user.NickName).First(&user).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 		return &NameAlredyExists{}
 	} else if err := db.Select("email").Where("email = ?", user.Email).First(&user).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -29,6 +35,11 @@ func (user *Users) Create(db *gorm.DB) error {
 		return err
 	}
 	return nil
+}
+
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
 }
 
 func (user *Users) GetAll(db *gorm.DB) []Users {
@@ -47,10 +58,12 @@ func (user *Users) Authenticate(db *gorm.DB) bool {
 		log.Println(result.Error)
 		return false
 	}
-	if pass != user.Pass {
-		return false
-	}
-	return true
+	return CheckPasswordHash(pass, user.Pass)
+}
+
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
 
 type WrongUsernameOrPasswordError struct{}
