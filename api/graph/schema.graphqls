@@ -1,0 +1,37 @@
+type User {
+  id: ID!
+  nickname: String!
+  firstname: String!
+  lastName: String!
+  email: String!
+  role: String!
+  groups: [String!]!
+}
+
+input NewUser {
+  email: String!
+  password: String!
+  nickname: String!
+  firstname: String!
+  lastname: String!
+}
+
+input RefreshTokenInput{
+  token: String!
+}
+
+type Query {
+  getAllUsers: [User]!
+  getUsers(input: [String!]): [String!]
+}
+
+input Login {
+  nickname: String!
+  password: String!
+}
+
+type Mutation {
+  createUser(input: NewUser!): String!
+  login(input: Login!): String!
+  refreshToken(input: RefreshTokenInput!): String!
+}
