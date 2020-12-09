@@ -16,8 +16,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB = db.Connector()
-
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (string, error) {
 	var newUser = db.Users{
 		Email:     input.Email,
@@ -64,9 +62,21 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 	return token, nil
 }
 
+func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return &model.User{}, fmt.Errorf("access denied")
+	}
+	if err := user.Get(DB); err != nil {
+		return &model.User{}, err
+	}
+	return &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.NickName,
+		Firstname: user.FirstName, LastName: user.LastName,
+		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}, nil
+}
+
 func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	if us := auth.ForContext(ctx); us == nil {
-
 		return []*model.User{}, fmt.Errorf("access denied")
 	}
 	var users db.Users
@@ -91,3 +101,5 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+var DB *gorm.DB = db.Connector()

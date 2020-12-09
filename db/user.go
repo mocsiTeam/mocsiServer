@@ -83,3 +83,10 @@ type EmailAlredyExists struct{}
 func (m *EmailAlredyExists) Error() string {
 	return "email alredy exists"
 }
+
+func (user *Users) Get(db *gorm.DB) error {
+	if err := db.Where("nick_name = ?", user.NickName).First(&user).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	return nil
+}
