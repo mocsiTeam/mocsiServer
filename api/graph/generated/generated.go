@@ -74,7 +74,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	GetAuthUser(ctx context.Context) (*model.User, error)
 	GetAllUsers(ctx context.Context) ([]*model.User, error)
-	GetUsers(ctx context.Context, input []string) ([]string, error)
+	GetUsers(ctx context.Context, input []string) ([]*model.User, error)
 }
 
 type executableSchema struct {
@@ -292,7 +292,7 @@ input RefreshTokenInput{
 type Query {
   getAuthUser: User!
   getAllUsers: [User]!
-  getUsers(input: [String!]): [String!]
+  getUsers(input: [String!]): [User!]
 }
 
 input Login {
@@ -655,9 +655,9 @@ func (ec *executionContext) _Query_getUsers(ctx context.Context, field graphql.C
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]string)
+	res := resTmp.([]*model.User)
 	fc.Result = res
-	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3035,6 +3035,46 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {

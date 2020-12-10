@@ -23,7 +23,7 @@ input RefreshTokenInput{
 type Query {
   getAuthUser: User!
   getAllUsers: [User]!
-  getUsers(input: [String!]): [String!]
+  getUsers(input: [String!]): [User!]
 }
 
 input Login {

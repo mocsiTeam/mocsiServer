@@ -90,3 +90,9 @@ func (user *Users) Get(db *gorm.DB) error {
 	}
 	return nil
 }
+
+func (user *Users) GetUsers(db *gorm.DB, nicknames []string) []Users {
+	users := []Users{}
+	db.Where(map[string]interface{}{"nick_name": nicknames}).Find(&users)
+	return users
+}
