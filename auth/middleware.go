@@ -33,7 +33,7 @@ func Middleware() func(http.Handler) http.Handler {
 				return
 			}
 
-			user := db.Users{NickName: username}
+			user := db.Users{Nickname: username}
 			if user.Check(DB) != nil {
 				next.ServeHTTP(w, r)
 				return
