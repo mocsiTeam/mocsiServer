@@ -7,41 +7,42 @@ import (
 )
 
 type Roles struct {
-	ID       uint   `gorm: "primaryKey;"`
-	RoleName string `gorm: "unique; not null;"`
+	ID       uint   `gorm:"primaryKey;"`
+	RoleName string `gorm:"unique; not null;"`
 }
 
 type Groups struct {
 	gorm.Model
-	Name string `gorm: "unique; not null;"`
+	Name string `gorm:"unique; not null;"`
 }
 
 type Rooms struct {
 	gorm.Model
-	Name  string `gorm: "unique; not null;"`
-	Link  string `gorm: "unique; not null;"`
+	Name  string `gorm:"unique; not null;"`
+	Link  string `gorm:"unique; not null;"`
 	Pass  string
 	Timer time.Time
 }
 
 type AccessLevel struct {
-	ID   uint   `gorm: "primaryKey;"`
-	Name string `gorm: "unique; not null;"`
+	ID   uint   `gorm:"primaryKey;"`
+	Name string `gorm:"unique; not null;"`
 }
 
 type Users struct {
 	gorm.Model
-	NickName  string `gorm: "unique; not null;" json:"name"`
-	Email     string `gorm: "unique; not null;"`
-	Pass      string `gorm: "not null;"`
-	FirstName string
-	LastName  string
-	RoleID    uint
-	Role      Roles `gorm:"foreignKey:RoleID;"`
+	Nickname     string `gorm:"unique; not null;" json:"name"`
+	Email        string `gorm:"unique; not null;"`
+	Pass         string `gorm:"not null;"`
+	Firstname    string
+	Lastname     string
+	RefreshToken string
+	RoleID       uint
+	Role         Roles `gorm:"foreignKey:RoleID;"`
 }
 
 type UserGroups struct {
-	ID      uint `gorm: "primaryKey;"`
+	ID      uint `gorm:"primaryKey;"`
 	UserID  uint
 	GroupID uint
 	User    Users  `gorm:"foreignKey:UserID; not null;"`
@@ -49,7 +50,7 @@ type UserGroups struct {
 }
 
 type RoomAccess struct {
-	ID      uint `gorm: "primaryKey;"`
+	ID      uint `gorm:"primaryKey;"`
 	UserID  uint
 	RoomID  uint
 	LevelID uint
@@ -59,18 +60,18 @@ type RoomAccess struct {
 }
 
 type StatsRoom struct {
-	ID         uint `gorm: "primaryKey;"`
+	ID         uint `gorm:"primaryKey;"`
 	RoomID     uint
 	Room       Rooms `gorm:"foreignKey:RoomID; not null;"`
 	CountUsers int
 }
 
 type StatsUser struct {
-	ID        uint `gorm: "primaryKey"`
+	ID        uint `gorm:"primaryKey"`
 	CreatedAt time.Time
 	RoomID    uint
-	Room      Rooms `gorm:"foreignKey:RoomID";"not null"`
+	Room      Rooms `gorm:"foreignKey:RoomID; not null;"`
 	UserID    uint
-	User      Users `gorm:"foreignKey:UserID";"not null"`
+	User      Users `gorm:"foreignKey:UserID; not null;"`
 	TimeSpend time.Time
 }

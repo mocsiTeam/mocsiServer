@@ -11,11 +11,27 @@ var (
 	SecretKey = []byte("secret")
 )
 
-func GenerateToken(nickname string) (string, error) {
+func GenerateAccessToken(nickname, user_id string) (string, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["user_id"] = user_id
+	claims["nickname"] = nickname
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	tokenString, err := token.SignedString(SecretKey)
+	if err != nil {
+		log.Fatal("Error in Generating key")
+		return "", err
+	}
+	return tokenString, nil
+}
+
+func GenerateRefreshToken(nickname, email, user_id string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["nickname"] = nickname
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	claims["email"] = email
+	claims["user_id"] = user_id
+	claims["exp"] = time.Now().Add(time.Hour * 24 * 7 * 4).Unix()
 	tokenString, err := token.SignedString(SecretKey)
 	if err != nil {
 		log.Fatal("Error in Generating key")
@@ -29,7 +45,7 @@ func ParseToken(tokenStr string) (string, error) {
 		return SecretKey, nil
 	})
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		username := claims["nickname"].(string)
+		username := claims["user_id"].(string)
 		return username, nil
 	}
 	return "", err

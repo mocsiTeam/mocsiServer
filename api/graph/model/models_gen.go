@@ -19,11 +19,16 @@ type RefreshTokenInput struct {
 	Token string `json:"token"`
 }
 
+type Tokens struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
 type User struct {
 	ID        string   `json:"id"`
 	Nickname  string   `json:"nickname"`
 	Firstname string   `json:"firstname"`
-	LastName  string   `json:"lastName"`
+	Lastname  string   `json:"lastname"`
 	Email     string   `json:"email"`
 	Role      string   `json:"role"`
 	Groups    []string `json:"groups"`
