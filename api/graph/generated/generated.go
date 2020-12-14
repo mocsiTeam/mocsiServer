@@ -2799,7 +2799,6 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
-
 func (ec *executionContext) marshalNTokens2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐTokens(ctx context.Context, sel ast.SelectionSet, v model.Tokens) graphql.Marshaler {
 	return ec._Tokens(ctx, sel, &v)
 }
@@ -2812,6 +2811,7 @@ func (ec *executionContext) marshalNTokens2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiSe
 		return graphql.Null
 	}
 	return ec._Tokens(ctx, sel, v)
+}
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)

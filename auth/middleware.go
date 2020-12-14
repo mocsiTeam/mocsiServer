@@ -3,9 +3,11 @@ package auth
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/mocsiTeam/mocsiServer/auth/jwt"
 	"github.com/mocsiTeam/mocsiServer/db"
+	"gorm.io/gorm"
 )
 
 var userCtxKey = &contextKey{"user"}
@@ -27,13 +29,17 @@ func Middleware() func(http.Handler) http.Handler {
 			}
 
 			tokenStr := header
-			username, err := jwt.ParseToken(tokenStr)
+			id, err := jwt.ParseToken(tokenStr)
 			if err != nil {
 				http.Error(w, "Invalid token", http.StatusForbidden)
 				return
 			}
-
-			user := db.Users{Nickname: username}
+			userID, err := strconv.Atoi(id)
+			if err != nil {
+				http.Error(w, "Invalid token", http.StatusForbidden)
+				return
+			}
+			user := db.Users{Model: gorm.Model{ID: uint(userID)}}
 			if user.Check(DB) != nil {
 				next.ServeHTTP(w, r)
 				return

@@ -17,7 +17,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.Tokens, error) {
 	var newUser = db.Users{
 		Email:     input.Email,
@@ -93,8 +92,8 @@ func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
 	if err := user.Get(DB); err != nil {
 		return &model.User{}, err
 	}
-	return &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.NickName,
-		Firstname: user.FirstName, LastName: user.LastName,
+	return &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
+		Firstname: user.Firstname, Lastname: user.Lastname,
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}, nil
 }
 
@@ -123,8 +122,8 @@ func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.
 		gettingUsers []*model.User
 	)
 	for _, user := range users.GetUsers(DB, input) {
-		gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.NickName,
-			Firstname: user.FirstName, LastName: user.LastName,
+		gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
+			Firstname: user.Firstname, Lastname: user.Lastname,
 			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
 	}
 	return gettingUsers, nil
