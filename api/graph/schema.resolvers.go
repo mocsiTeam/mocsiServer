@@ -17,6 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
+
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.Tokens, error) {
 	var newUser = db.Users{
 		Email:     input.Email,
@@ -84,13 +85,27 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 	return token, nil
 }
 
+func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return &model.User{}, fmt.Errorf("access denied")
+	}
+	if err := user.Get(DB); err != nil {
+		return &model.User{}, err
+	}
+	return &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.NickName,
+		Firstname: user.FirstName, LastName: user.LastName,
+		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}, nil
+}
+
 func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	if us := auth.ForContext(ctx); us == nil {
-
 		return []*model.User{}, fmt.Errorf("access denied")
 	}
-	var users db.Users
-	var allUsers []*model.User
+	var (
+		users    db.Users
+		allUsers []*model.User
+	)
 	for _, user := range users.GetAll(DB) {
 		allUsers = append(allUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
 			Firstname: user.Firstname, Lastname: user.Lastname,
@@ -99,8 +114,20 @@ func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) 
 	return allUsers, nil
 }
 
-func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]string, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.User, error) {
+	if us := auth.ForContext(ctx); us == nil {
+		return []*model.User{}, fmt.Errorf("access denied")
+	}
+	var (
+		users        db.Users
+		gettingUsers []*model.User
+	)
+	for _, user := range users.GetUsers(DB, input) {
+		gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.NickName,
+			Firstname: user.FirstName, LastName: user.LastName,
+			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+	}
+	return gettingUsers, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

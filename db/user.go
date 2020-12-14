@@ -92,8 +92,21 @@ func (m *EmailAlredyExists) Error() string {
 	return "email alredy exists"
 }
 
+
 type UserNotFound struct{}
 
 func (m *UserNotFound) Error() string {
 	return "user not found"
+  
+func (user *Users) Get(db *gorm.DB) error {
+	if err := db.Where("nick_name = ?", user.NickName).First(&user).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	return nil
+}
+
+func (user *Users) GetUsers(db *gorm.DB, nicknames []string) []Users {
+	users := []Users{}
+	db.Where(map[string]interface{}{"nick_name": nicknames}).Find(&users)
+	return users
 }
