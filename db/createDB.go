@@ -86,7 +86,7 @@ func CreateDB() error {
 		db.AutoMigrate(&Groups{})
 		db.AutoMigrate(&AccessLevel{})
 		db.AutoMigrate(&Users{})
-		db.AutoMigrate(&UserGroups{})
+		db.AutoMigrate(&GroupAccess{})
 		db.AutoMigrate(&RoomAccess{})
 		db.AutoMigrate(&StatsRoom{})
 		db.AutoMigrate(&StatsUser{})
