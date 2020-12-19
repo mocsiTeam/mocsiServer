@@ -194,27 +194,25 @@ func (r *queryResolver) GetGroups(ctx context.Context, input []string) ([]*model
 	var (
 		groups        []*db.Groups
 		gettingGroups []*model.Group
-		groupsMap     = make(map[string]bool)
 	)
 	groups = db.GetGroups(DB, input)
-	for _, v := range groups {
-		groupsMap[v.Name] = true
-	}
 	for _, group := range groups {
-		if _, ok := groupsMap[group.Name]; ok {
-			owner := group.GetOwner(DB)
-			var gettingUsers []*model.User
-			for _, user := range group.GetUsers(DB) {
-				gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
-					Firstname: user.Firstname, Lastname: user.Lastname,
-					Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+		for _, v := range input {
+			if v == group.Name {
+				owner := group.GetOwner(DB)
+				var gettingUsers []*model.User
+				for _, user := range group.GetUsers(DB) {
+					gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
+						Firstname: user.Firstname, Lastname: user.Lastname,
+						Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+				}
+				gettingGroups = append(gettingGroups, &model.Group{Name: group.Name, CountUsers: int(group.CountUsers),
+					Owner: &model.User{ID: strconv.Itoa(int(owner.ID)), Nickname: owner.Nickname, Email: owner.Email},
+					Users: gettingUsers})
+			} else {
+				gettingGroups = append(gettingGroups, &model.Group{Name: "-", CountUsers: 0,
+					Owner: &model.User{}, Users: []*model.User{}, Error: "group_not_found"})
 			}
-			gettingGroups = append(gettingGroups, &model.Group{Name: group.Name, CountUsers: int(group.CountUsers),
-				Owner: &model.User{ID: strconv.Itoa(int(owner.ID)), Nickname: owner.Nickname, Email: owner.Email},
-				Users: gettingUsers})
-		} else {
-			gettingGroups = append(gettingGroups, &model.Group{Name: "-", CountUsers: 0,
-				Owner: &model.User{}, Users: []*model.User{}, Error: "group_not_found"})
 		}
 	}
 	return gettingGroups, nil
