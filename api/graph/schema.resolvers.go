@@ -180,9 +180,17 @@ func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.
 		gettingUsers []*model.User
 	)
 	for _, user := range users.GetUsers(DB, input) {
-		gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
-			Firstname: user.Firstname, Lastname: user.Lastname,
-			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+		for _, v := range input {
+			if v == user.NickName {
+				gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.NickName,
+					Firstname: user.FirstName, LastName: user.LastName,
+					Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+			} else {
+				gettingUsers = append(gettingUsers, &model.User{ID: "0", Nickname: "",
+					Firstname: "", LastName: "",
+					Email: "", Role: "0", Error: "user_not_found"})
+			}
+		}
 	}
 	return gettingUsers, nil
 }

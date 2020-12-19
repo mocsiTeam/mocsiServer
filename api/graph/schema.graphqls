@@ -6,6 +6,7 @@ type User {
   email: String!
   role: String!
   groups: [String!]!
+  Error: String!
 }
 
 type Tokens {
