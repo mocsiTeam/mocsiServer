@@ -13,6 +13,14 @@ type Tokens {
   refreshToken: String!
 }
 
+type Group {
+  Name: String!
+  CountUsers: Int!
+  Users: [User!]
+  Owner: User!
+  Error: String!
+}
+
 input NewUser {
   email: String!
   password: String!
@@ -25,10 +33,20 @@ input RefreshTokenInput{
   token: String!
 }
 
+input NameGroup {
+  Name: String!
+}
+
+input GroupUsers {
+  NameGroup: String!
+  UsersID: [Int!]
+}
+
 type Query {
   getAuthUser: User!
-  getAllUsers: [User]!
+  getAllUsers: [User!]
   getUsers(input: [String!]): [User!]
+  getGroups(input: [String!]): [Group!]
 }
 
 input Login {
@@ -40,4 +58,8 @@ type Mutation {
   createUser(input: NewUser!): Tokens!
   login(input: Login!): Tokens!
   refreshToken(input: RefreshTokenInput!): String!
+  createGroup(input: NameGroup!): Group!
+  addUsersToGroup(input: GroupUsers!): String!
+  kickUsersFromGroup(input: GroupUsers!): String!
+  deleteGroup(input: NameGroup!): String!
 }

@@ -84,6 +84,64 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 	return token, nil
 }
 
+func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NameGroup) (*model.Group, error) {
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return &model.Group{}, fmt.Errorf("access denied")
+	}
+	group := &db.Groups{Name: input.Name}
+	if err := group.Create(DB, user); err != nil {
+		return &model.Group{}, err
+	}
+	owner := &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
+		Firstname: user.Firstname, Lastname: user.Lastname,
+		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
+	return &model.Group{Name: group.Name, CountUsers: int(group.CountUsers),
+		Owner: owner, Users: []*model.User{owner}}, nil
+}
+
+func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.GroupUsers) (string, error) {
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return "", nil
+	}
+	group := db.GetGroups(DB, []string{input.NameGroup})
+	if len(group) == 0 {
+		return "", errors.New("group_not_found")
+	} else if err := group[0].AddUsers(DB, input.UsersID, user); err != nil {
+		return "", err
+	}
+	return "users_added", nil
+}
+
+func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.GroupUsers) (string, error) {
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return "", nil
+	}
+	group := db.GetGroups(DB, []string{input.NameGroup})
+	if len(group) == 0 {
+		return "", errors.New("group_not_found")
+	} else if err := group[0].KickUsers(DB, input.UsersID, user); err != nil {
+		return "", err
+	}
+	return "users_kicked", nil
+}
+
+func (r *mutationResolver) DeleteGroup(ctx context.Context, input model.NameGroup) (string, error) {
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return "", nil
+	}
+	group := db.GetGroups(DB, []string{input.Name})
+	if len(group) == 0 {
+		return "", errors.New("group_not_found")
+	} else if err := group[0].DeleteGroup(DB, user); err != nil {
+		return "", err
+	}
+	return "group_deleted", nil
+}
+
 func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -127,6 +185,37 @@ func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.
 			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
 	}
 	return gettingUsers, nil
+}
+
+func (r *queryResolver) GetGroups(ctx context.Context, input []string) ([]*model.Group, error) {
+	if us := auth.ForContext(ctx); us == nil {
+		return []*model.Group{}, fmt.Errorf("access denied")
+	}
+	var (
+		groups        []*db.Groups
+		gettingGroups []*model.Group
+	)
+	groups = db.GetGroups(DB, input)
+	for _, group := range groups {
+		for _, v := range input {
+			if v == group.Name {
+				owner := group.GetOwner(DB)
+				var gettingUsers []*model.User
+				for _, user := range group.GetUsers(DB) {
+					gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
+						Firstname: user.Firstname, Lastname: user.Lastname,
+						Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+				}
+				gettingGroups = append(gettingGroups, &model.Group{Name: group.Name, CountUsers: int(group.CountUsers),
+					Owner: &model.User{ID: strconv.Itoa(int(owner.ID)), Nickname: owner.Nickname, Email: owner.Email},
+					Users: gettingUsers})
+			} else {
+				gettingGroups = append(gettingGroups, &model.Group{Name: "-", CountUsers: 0,
+					Owner: &model.User{}, Users: []*model.User{}, Error: "group_not_found"})
+			}
+		}
+	}
+	return gettingGroups, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

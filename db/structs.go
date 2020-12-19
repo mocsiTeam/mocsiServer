@@ -13,7 +13,8 @@ type Roles struct {
 
 type Groups struct {
 	gorm.Model
-	Name string `gorm:"unique; not null;"`
+	Name       string `gorm:"unique; not null;"`
+	CountUsers uint
 }
 
 type Rooms struct {
@@ -41,12 +42,14 @@ type Users struct {
 	Role         Roles `gorm:"foreignKey:RoleID;"`
 }
 
-type UserGroups struct {
+type GroupAccess struct {
 	ID      uint `gorm:"primaryKey;"`
 	UserID  uint
 	GroupID uint
-	User    Users  `gorm:"foreignKey:UserID; not null;"`
-	Group   Groups `gorm:"foreignKey:GroupID; not null;"`
+	LevelID uint
+	User    Users       `gorm:"foreignKey:UserID; not null;"`
+	Group   Groups      `gorm:"foreignKey:GroupID; not null;"`
+	Level   AccessLevel `gorm:"foreignKey:LevelID; not null;"`
 }
 
 type RoomAccess struct {

@@ -49,7 +49,7 @@ func (user *Users) GetAll(db *gorm.DB) []Users {
 }
 
 func (user *Users) Check(db *gorm.DB) error {
-	err := db.Select("ID", "nickname").Where("id = ?", user.ID).First(&user).Error
+	err := db.Where("id = ?", user.ID).First(&user).Error
 	return err
 }
 
@@ -109,4 +109,14 @@ func (user *Users) GetUsers(db *gorm.DB, nicknames []string) []Users {
 	users := []Users{}
 	db.Where(map[string]interface{}{"nickname": nicknames}).Find(&users)
 	return users
+}
+
+func (user *Users) GetUserGroups(db *gorm.DB) []*Groups {
+	var groupAccess []*GroupAccess
+	var groups []*Groups
+	db.Joins("Group").Where("user_id = ?", user.ID).Find(&groupAccess)
+	for _, group := range groupAccess {
+		groups = append(groups, &group.Group)
+	}
+	return groups
 }
