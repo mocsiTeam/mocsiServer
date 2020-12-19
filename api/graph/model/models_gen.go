@@ -2,9 +2,26 @@
 
 package model
 
+type Group struct {
+	Name       string  `json:"Name"`
+	CountUsers int     `json:"CountUsers"`
+	Users      []*User `json:"Users"`
+	Owner      *User   `json:"Owner"`
+	Error      string  `json:"Error"`
+}
+
+type GroupUsers struct {
+	NameGroup string `json:"NameGroup"`
+	UsersID   []int  `json:"UsersID"`
+}
+
 type Login struct {
 	Nickname string `json:"nickname"`
 	Password string `json:"password"`
+}
+
+type NameGroup struct {
+	Name string `json:"Name"`
 }
 
 type NewUser struct {
@@ -19,11 +36,16 @@ type RefreshTokenInput struct {
 	Token string `json:"token"`
 }
 
+type Tokens struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
 type User struct {
 	ID        string   `json:"id"`
 	Nickname  string   `json:"nickname"`
 	Firstname string   `json:"firstname"`
-	LastName  string   `json:"lastName"`
+	Lastname  string   `json:"lastname"`
 	Email     string   `json:"email"`
 	Role      string   `json:"role"`
 	Groups    []string `json:"groups"`
