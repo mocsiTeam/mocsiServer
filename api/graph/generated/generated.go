@@ -57,6 +57,7 @@ type ComplexityRoot struct {
 
 	User struct {
 		Email     func(childComplexity int) int
+		Error     func(childComplexity int) int
 		Firstname func(childComplexity int) int
 		Groups    func(childComplexity int) int
 		ID        func(childComplexity int) int
@@ -160,6 +161,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Email(childComplexity), true
+
+	case "User.Error":
+		if e.complexity.User.Error == nil {
+			break
+		}
+
+		return e.complexity.User.Error(childComplexity), true
 
 	case "User.firstname":
 		if e.complexity.User.Firstname == nil {
@@ -275,6 +283,7 @@ var sources = []*ast.Source{
   email: String!
   role: String!
   groups: [String!]!
+  Error: String!
 }
 
 input NewUser {
@@ -974,6 +983,41 @@ func (ec *executionContext) _User_groups(ctx context.Context, field graphql.Coll
 	res := resTmp.([]string)
 	fc.Result = res
 	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_Error(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Error, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -2324,6 +2368,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "groups":
 			out.Values[i] = ec._User_groups(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Error":
+			out.Values[i] = ec._User_Error(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

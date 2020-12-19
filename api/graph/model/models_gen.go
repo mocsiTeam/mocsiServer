@@ -27,4 +27,5 @@ type User struct {
 	Email     string   `json:"email"`
 	Role      string   `json:"role"`
 	Groups    []string `json:"groups"`
+	Error     string   `json:"Error"`
 }
