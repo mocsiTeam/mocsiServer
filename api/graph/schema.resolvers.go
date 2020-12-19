@@ -181,13 +181,13 @@ func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.
 	)
 	for _, user := range users.GetUsers(DB, input) {
 		for _, v := range input {
-			if v == user.NickName {
-				gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.NickName,
-					Firstname: user.FirstName, LastName: user.LastName,
+			if v == user.Nickname {
+				gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
+					Firstname: user.Firstname, Lastname: user.Lastname,
 					Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
 			} else {
-				gettingUsers = append(gettingUsers, &model.User{ID: "0", Nickname: "",
-					Firstname: "", LastName: "",
+				gettingUsers = append(gettingUsers, &model.User{ID: "0", Nickname: v,
+					Firstname: "", Lastname: "",
 					Email: "", Role: "0", Error: "user_not_found"})
 			}
 		}
@@ -218,7 +218,7 @@ func (r *queryResolver) GetGroups(ctx context.Context, input []string) ([]*model
 					Owner: &model.User{ID: strconv.Itoa(int(owner.ID)), Nickname: owner.Nickname, Email: owner.Email},
 					Users: gettingUsers})
 			} else {
-				gettingGroups = append(gettingGroups, &model.Group{Name: "-", CountUsers: 0,
+				gettingGroups = append(gettingGroups, &model.Group{Name: v, CountUsers: 0,
 					Owner: &model.User{}, Users: []*model.User{}, Error: "group_not_found"})
 			}
 		}
