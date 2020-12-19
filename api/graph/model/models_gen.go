@@ -2,9 +2,26 @@
 
 package model
 
+type Group struct {
+	Name       string  `json:"Name"`
+	CountUsers int     `json:"CountUsers"`
+	Users      []*User `json:"Users"`
+	Owner      *User   `json:"Owner"`
+	Error      string  `json:"Error"`
+}
+
+type GroupUsers struct {
+	NameGroup string `json:"NameGroup"`
+	UsersID   []int  `json:"UsersID"`
+}
+
 type Login struct {
 	Nickname string `json:"nickname"`
 	Password string `json:"password"`
+}
+
+type NameGroup struct {
+	Name string `json:"Name"`
 }
 
 type NewUser struct {
