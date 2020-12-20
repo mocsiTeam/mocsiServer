@@ -96,7 +96,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup
 	owner := &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
 		Firstname: user.Firstname, Lastname: user.Lastname,
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
-	return &model.Group{Name: group.Name, CountUsers: int(group.CountUsers),
+	return &model.Group{ID: strconv.Itoa(int(group.ID)), Name: group.Name, CountUsers: int(group.CountUsers),
 		Owner: owner, Users: []*model.User{owner}}, nil
 }
 
