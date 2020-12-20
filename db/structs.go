@@ -15,6 +15,7 @@ type Groups struct {
 	gorm.Model
 	Name       string `gorm:"unique; not null;"`
 	CountUsers uint
+	Private    bool
 }
 
 type Rooms struct {

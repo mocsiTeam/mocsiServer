@@ -3,16 +3,23 @@
 package model
 
 type Group struct {
-	Name       string  `json:"Name"`
-	CountUsers int     `json:"CountUsers"`
-	Users      []*User `json:"Users"`
-	Owner      *User   `json:"Owner"`
-	Error      string  `json:"Error"`
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	CountUsers int     `json:"countUsers"`
+	Owner      *User   `json:"owner"`
+	Editors    []*User `json:"editors"`
+	Users      []*User `json:"users"`
+	Error      string  `json:"error"`
 }
 
-type GroupUsers struct {
-	NameGroup string `json:"NameGroup"`
-	UsersID   []int  `json:"UsersID"`
+type GroupsToRoom struct {
+	RoomID   string   `json:"roomID"`
+	GroupsID []string `json:"groupsID"`
+}
+
+type InfoGroups struct {
+	GroupsID  []string `json:"groupsID"`
+	IsPrivate bool     `json:"isPrivate"`
 }
 
 type Login struct {
@@ -20,8 +27,14 @@ type Login struct {
 	Password string `json:"password"`
 }
 
-type NameGroup struct {
-	Name string `json:"Name"`
+type NewGroup struct {
+	Name    string `json:"name"`
+	Private bool   `json:"private"`
+}
+
+type NewRoom struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
 }
 
 type NewUser struct {
@@ -34,6 +47,17 @@ type NewUser struct {
 
 type RefreshTokenInput struct {
 	Token string `json:"token"`
+}
+
+type Room struct {
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Link     string  `json:"link"`
+	Password string  `json:"password"`
+	Owner    *User   `json:"owner"`
+	Editors  []*User `json:"editors"`
+	Users    []*User `json:"users"`
+	Error    string  `json:"error"`
 }
 
 type Tokens struct {
@@ -49,5 +73,15 @@ type User struct {
 	Email     string   `json:"email"`
 	Role      string   `json:"role"`
 	Groups    []string `json:"groups"`
-	Error     string   `json:"Error"`
+	Error     string   `json:"error"`
+}
+
+type UsersToGroup struct {
+	GroupID string   `json:"groupID"`
+	UsersID []string `json:"usersID"`
+}
+
+type UsersToRoom struct {
+	RoomID  string   `json:"roomID"`
+	UsersID []string `json:"usersID"`
 }
