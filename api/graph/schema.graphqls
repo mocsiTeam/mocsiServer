@@ -99,7 +99,7 @@ type Mutation {
   addEditorsToGroup(input: UsersToGroup!): String!
   kickUsersFromGroup(input: UsersToGroup!): String!
   deleteGroup(input: ID!): String!
-  createRoom(input: NewRoom!): String!
+  createRoom(input: NewRoom!): Room!
   addUsersToRoom(input: UsersToRoom): String!
   addGroupToRoom(input: GroupsToRoom): String!
   kickUsersFromRoom(input: UsersToRoom): String!

@@ -115,7 +115,7 @@ type MutationResolver interface {
 	AddEditorsToGroup(ctx context.Context, input model.UsersToGroup) (string, error)
 	KickUsersFromGroup(ctx context.Context, input model.UsersToGroup) (string, error)
 	DeleteGroup(ctx context.Context, input string) (string, error)
-	CreateRoom(ctx context.Context, input model.NewRoom) (string, error)
+	CreateRoom(ctx context.Context, input model.NewRoom) (*model.Room, error)
 	AddUsersToRoom(ctx context.Context, input *model.UsersToRoom) (string, error)
 	AddGroupToRoom(ctx context.Context, input *model.GroupsToRoom) (string, error)
 	KickUsersFromRoom(ctx context.Context, input *model.UsersToRoom) (string, error)
@@ -698,7 +698,7 @@ type Mutation {
   addEditorsToGroup(input: UsersToGroup!): String!
   kickUsersFromGroup(input: UsersToGroup!): String!
   deleteGroup(input: ID!): String!
-  createRoom(input: NewRoom!): String!
+  createRoom(input: NewRoom!): Room!
   addUsersToRoom(input: UsersToRoom): String!
   addGroupToRoom(input: GroupsToRoom): String!
   kickUsersFromRoom(input: UsersToRoom): String!
@@ -1617,9 +1617,9 @@ func (ec *executionContext) _Mutation_createRoom(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.Room)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐRoom(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_addUsersToRoom(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4784,6 +4784,20 @@ func (ec *executionContext) unmarshalNNewUser2githubᚗcomᚋmocsiTeamᚋmocsiSe
 func (ec *executionContext) unmarshalNRefreshTokenInput2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐRefreshTokenInput(ctx context.Context, v interface{}) (model.RefreshTokenInput, error) {
 	res, err := ec.unmarshalInputRefreshTokenInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐRoom(ctx context.Context, sel ast.SelectionSet, v model.Room) graphql.Marshaler {
+	return ec._Room(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐRoom(ctx context.Context, sel ast.SelectionSet, v *model.Room) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Room(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {

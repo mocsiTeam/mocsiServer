@@ -103,30 +103,41 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup
 func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		return "", nil
+		return "", fmt.Errorf("access denied")
 	}
-	group := db.GetPublicGroups(DB, []string{input.GroupID})
-	if len(group) == 0 {
-		return "", errors.New("group_not_found")
-	} else if err := group[0].AddUsers(DB, input.UsersID, user); err != nil {
+	group, err := db.GetModGroup(DB, input.GroupID, user)
+	if err != nil {
+		return "", err
+	} else if err := group.AddUsers(DB, input.UsersID, user); err != nil {
 		return "", err
 	}
 	return "users_added", nil
 }
 
 func (r *mutationResolver) AddEditorsToGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	var user *db.Users
+	var group *db.Groups
+	if user = auth.ForContext(ctx); user == nil {
+		return "", fmt.Errorf("access denied")
+	}
+	group, err := db.GetModGroup(DB, input.GroupID, user)
+	if err != nil {
+		return "", err
+	} else if err := group.AddEditors(DB, input.UsersID, user); err != nil {
+		return "", err
+	}
+	return "users_became_editors", nil
 }
 
 func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		return "", nil
+		return "", fmt.Errorf("access denied")
 	}
-	group := db.GetPublicGroups(DB, []string{input.GroupID})
-	if len(group) == 0 {
-		return "", errors.New("group_not_found")
-	} else if err := group[0].KickUsers(DB, input.UsersID, user); err != nil {
+	group, err := db.GetModGroup(DB, input.GroupID, user)
+	if err != nil {
+		return "", err
+	} else if err := group.KickUsers(DB, input.UsersID, user); err != nil {
 		return "", err
 	}
 	return "users_kicked", nil
@@ -135,18 +146,18 @@ func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.U
 func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		return "", nil
+		return "", fmt.Errorf("access denied")
 	}
-	group := db.GetPublicGroups(DB, []string{input})
-	if len(group) == 0 {
-		return "", errors.New("group_not_found")
-	} else if err := group[0].DeleteGroup(DB, user); err != nil {
+	group, err := db.GetModGroup(DB, input, user)
+	if err != nil {
+		return "", err
+	} else if err := group.DeleteGroup(DB, user); err != nil {
 		return "", err
 	}
 	return "group_deleted", nil
 }
 
-func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) (string, error) {
+func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) (*model.Room, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

@@ -58,6 +58,14 @@ func GetMyGroups(db *gorm.DB, user *Users) []*Groups {
 	return groups
 }
 
+func GetModGroup(db *gorm.DB, id string, user *Users) (*Groups, error) {
+	var groupAccess GroupAccess
+	if err := db.Joins("Group").Where("user_id = ? AND level_id = ?", user.ID, 1).Or("user_id = ? AND level_id = ?", user.ID, 2).First(&groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.New("group_not_found")
+	}
+	return &groupAccess.Group, nil
+}
+
 func (group *Groups) GetOwner(db *gorm.DB) *Users {
 	var groupAccess GroupAccess
 	db.Joins("User").Where("group_id = ? AND level_id = ?", int(group.ID), 1).First(&groupAccess)
