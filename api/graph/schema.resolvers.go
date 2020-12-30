@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/mocsiTeam/mocsiServer/api/graph/generated"
@@ -158,27 +159,94 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (strin
 }
 
 func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) (*model.Room, error) {
-	panic(fmt.Errorf("not implemented"))
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return &model.Room{}, fmt.Errorf("access denied")
+	}
+	hostname, _ := os.Hostname()
+	room := &db.Rooms{
+		Name: input.Name,
+		Link: "https://" + hostname + "/" + input.Name,
+		Pass: input.Password,
+	}
+	if err := room.Create(DB, user); err != nil {
+		return &model.Room{}, err
+	}
+	owner := &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
+		Firstname: user.Firstname, Lastname: user.Lastname,
+		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
+	return &model.Room{ID: strconv.Itoa(int(room.ID)), Name: room.Name,
+		Link: room.Link, Owner: owner, Users: []*model.User{owner}}, nil
 }
 
 func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input *model.UsersToRoom) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return "", fmt.Errorf("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	if err != nil {
+		return "", err
+	} else if err := room.AddUsers(DB, input.UsersID, user); err != nil {
+		return "", err
+	}
+	return "users_added", nil
 }
 
 func (r *mutationResolver) AddGroupToRoom(ctx context.Context, input *model.GroupsToRoom) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return "", fmt.Errorf("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	if err != nil {
+		return "", err
+	} else if err := room.AddGroups(DB, input.GroupsID, user); err != nil {
+		return "", err
+	}
+	return "groups_added", nil
 }
 
 func (r *mutationResolver) KickUsersFromRoom(ctx context.Context, input *model.UsersToRoom) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return "", fmt.Errorf("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	if err != nil {
+		return "", err
+	} else if err := room.KickUsers(DB, input.UsersID, user); err != nil {
+		return "", err
+	}
+	return "users_kicked", nil
 }
 
 func (r *mutationResolver) KickGroupsFromRoom(ctx context.Context, input *model.GroupsToRoom) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return "", fmt.Errorf("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	if err != nil {
+		return "", err
+	} else if err := room.KickGroups(DB, input.GroupsID, user); err != nil {
+		return "", err
+	}
+	return "groups_kicked", nil
 }
 
 func (r *mutationResolver) DeleteRoom(ctx context.Context, input string) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		return "", fmt.Errorf("access denied")
+	}
+	group, err := db.GetModRoom(DB, input, user)
+	if err != nil {
+		return "", err
+	} else if err := group.DeleteRoom(DB, user); err != nil {
+		return "", err
+	}
+	return "room_deleted", nil
 }
 
 func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {

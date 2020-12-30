@@ -28,7 +28,6 @@ type Room {
   id: ID!
   name: String!
   link: String!
-  password: String!
   owner: User!
   editors: [User!]
   users: [User!]

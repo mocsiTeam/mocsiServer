@@ -136,12 +136,11 @@ func (group *Groups) KickUsers(db *gorm.DB, usersID []string, user *Users) error
 }
 
 func (group *Groups) DeleteGroup(db *gorm.DB, user *Users) error {
-	var groupAccess GroupAccess
 	if err := group.checkOwner(db, user); err != nil {
 		return err
 	} else if err := db.Delete(&group).Error; err != nil {
 		return err
-	} else if err := db.Where("group_id = ?", group.ID).Delete(&groupAccess).Error; err != nil {
+	} else if err := db.Exec("DELETE FROM group_accesses WHERE group_id = ?", group.ID).Error; err != nil {
 		return nil
 	}
 	return nil
