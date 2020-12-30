@@ -79,14 +79,13 @@ type ComplexityRoot struct {
 	}
 
 	Room struct {
-		Editors  func(childComplexity int) int
-		Error    func(childComplexity int) int
-		ID       func(childComplexity int) int
-		Link     func(childComplexity int) int
-		Name     func(childComplexity int) int
-		Owner    func(childComplexity int) int
-		Password func(childComplexity int) int
-		Users    func(childComplexity int) int
+		Editors func(childComplexity int) int
+		Error   func(childComplexity int) int
+		ID      func(childComplexity int) int
+		Link    func(childComplexity int) int
+		Name    func(childComplexity int) int
+		Owner   func(childComplexity int) int
+		Users   func(childComplexity int) int
 	}
 
 	Tokens struct {
@@ -449,13 +448,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Room.Owner(childComplexity), true
 
-	case "Room.password":
-		if e.complexity.Room.Password == nil {
-			break
-		}
-
-		return e.complexity.Room.Password(childComplexity), true
-
 	case "Room.users":
 		if e.complexity.Room.Users == nil {
 			break
@@ -627,7 +619,6 @@ type Room {
   id: ID!
   name: String!
   link: String!
-  password: String!
   owner: User!
   editors: [User!]
   users: [User!]
@@ -2169,41 +2160,6 @@ func (ec *executionContext) _Room_link(ctx context.Context, field graphql.Collec
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Link, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Room_password(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Room",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Password, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4325,11 +4281,6 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "link":
 			out.Values[i] = ec._Room_link(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "password":
-			out.Values[i] = ec._Room_password(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

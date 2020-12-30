@@ -50,14 +50,13 @@ type RefreshTokenInput struct {
 }
 
 type Room struct {
-	ID       string  `json:"id"`
-	Name     string  `json:"name"`
-	Link     string  `json:"link"`
-	Password string  `json:"password"`
-	Owner    *User   `json:"owner"`
-	Editors  []*User `json:"editors"`
-	Users    []*User `json:"users"`
-	Error    string  `json:"error"`
+	ID      string  `json:"id"`
+	Name    string  `json:"name"`
+	Link    string  `json:"link"`
+	Owner   *User   `json:"owner"`
+	Editors []*User `json:"editors"`
+	Users   []*User `json:"users"`
+	Error   string  `json:"error"`
 }
 
 type Tokens struct {
