@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -12,6 +13,7 @@ var (
 )
 
 func GenerateAccessToken(nickname, user_id string) (string, error) {
+	fmt.Println("nick", nickname)
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_id"] = user_id

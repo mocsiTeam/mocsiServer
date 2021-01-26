@@ -13,7 +13,7 @@ import (
 	"github.com/mocsiTeam/mocsiServer/auth"
 )
 
-const defaultPort = "8080"
+const defaultPort = "8081"
 
 func main() {
 	port := os.Getenv("PORT")
