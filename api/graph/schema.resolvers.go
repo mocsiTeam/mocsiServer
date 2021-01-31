@@ -314,6 +314,24 @@ func (r *queryResolver) GetMyGroups(ctx context.Context) (mod []*model.Group, er
 	return getGroups(db.GetMyGroups(DB, user), []string{}, true), nil
 }
 
+func (r *queryResolver) GetMyRooms(ctx context.Context) (mod []*model.Room, err error) {
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	return getRooms(db.GetMyRooms(DB, user)), nil
+}
+
+func (r *queryResolver) GetRooms(ctx context.Context, input []string) (mod []*model.Room, err error) {
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	return getRooms(db.GetRooms(DB, input, user)), nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -341,17 +359,24 @@ func getGroups(groups []*db.Groups, groupsID []string, isPrivate bool) []*model.
 		groupsMap[getNameOrIDFromGroup(group, isPrivate)] = true
 		owner := group.GetOwner(DB)
 		var gettingUsers []*model.User
+		var gettingEditors []*model.User
 		for _, user := range group.GetUsers(DB) {
 			gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)),
 				Nickname:  user.Nickname,
 				Firstname: user.Firstname, Lastname: user.Lastname,
 				Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
 		}
+		for _, editor := range group.GetEditors(DB) {
+			gettingEditors = append(gettingUsers, &model.User{ID: strconv.Itoa(int(editor.ID)),
+				Nickname:  editor.Nickname,
+				Firstname: editor.Firstname, Lastname: editor.Lastname,
+				Email: editor.Email, Role: strconv.Itoa(int(editor.RoleID))})
+		}
 		gettingGroups = append(gettingGroups, &model.Group{ID: strconv.Itoa(int(group.ID)),
 			Name: group.Name, CountUsers: int(group.CountUsers),
 			Owner: &model.User{ID: strconv.Itoa(int(owner.ID)),
 				Nickname: owner.Nickname, Email: owner.Email},
-			Users: gettingUsers})
+			Users: gettingUsers, Editors: gettingEditors})
 	}
 	if len(groups) != len(groupsID) {
 		for _, v := range groupsID {
@@ -362,6 +387,34 @@ func getGroups(groups []*db.Groups, groupsID []string, isPrivate bool) []*model.
 		}
 	}
 	return gettingGroups
+}
+
+func getRooms(rooms []db.Rooms) []*model.Room {
+	var gettingRooms []*model.Room
+	for _, room := range rooms {
+		owner := room.GetOwner(DB)
+		var gettingUsers []*model.User
+		var gettingEditors []*model.User
+		for _, user := range room.GetUsers(DB) {
+			gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)),
+				Nickname:  user.Nickname,
+				Firstname: user.Firstname, Lastname: user.Lastname,
+				Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+		}
+		for _, editor := range room.GetEditors(DB) {
+			gettingEditors = append(gettingUsers, &model.User{ID: strconv.Itoa(int(editor.ID)),
+				Nickname:  editor.Nickname,
+				Firstname: editor.Firstname, Lastname: editor.Lastname,
+				Email: editor.Email, Role: strconv.Itoa(int(editor.RoleID))})
+		}
+		gettingRooms = append(gettingRooms, &model.Room{
+			ID: strconv.Itoa(int(room.ID)), Name: room.Name, Link: room.Link,
+			Owner: &model.User{ID: strconv.Itoa(int(owner.ID)),
+				Nickname: owner.Nickname, Email: owner.Email},
+			Editors: gettingEditors, Users: gettingUsers,
+		})
+	}
+	return gettingRooms
 }
 
 func getNameOrIDFromGroup(group *db.Groups, isPrivate bool) string {
@@ -379,7 +432,6 @@ func panicIf(err error) {
 
 func getReport(err *error) {
 	if r := recover(); r != nil {
-		fmt.Println("panica")
 		switch x := r.(type) {
 		case string:
 			*err = errors.New(x)

@@ -87,6 +87,8 @@ type Query {
   getUsers(input: [String!]): [User!]
   getGroups(input: InfoGroups!): [Group!]
   getMyGroups: [Group!]
+  getMyRooms: [Room!]
+  getRooms(input: [String!]): [Room!]
 }
 
 type Mutation {
