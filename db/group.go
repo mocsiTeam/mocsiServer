@@ -68,7 +68,7 @@ func GetModGroup(db *gorm.DB, id string, user *Users) (*Groups, error) {
 
 func (group *Groups) GetOwner(db *gorm.DB) *Users {
 	var groupAccess GroupAccess
-	db.Joins("User").Where("group_id = ? AND level_id = ?", int(group.ID), 1).First(&groupAccess)
+	db.Joins("User").Where("group_id = ? AND level_id = ?", group.ID, 1).First(&groupAccess)
 	return &groupAccess.User
 }
 
@@ -78,6 +78,16 @@ func (group *Groups) GetUsers(db *gorm.DB) []*Users {
 	db.Joins("User").Where("group_id = ?", group.ID).Find(&groupAccess)
 	for _, user := range groupAccess {
 		users = append(users, &user.User)
+	}
+	return users
+}
+
+func (group *Groups) GetEditors(db *gorm.DB) []Users {
+	var groupAccess []GroupAccess
+	var users []Users
+	db.Joins("User").Where("group_id = ? AND level_id = ?", group.ID, 2).First(&groupAccess)
+	for _, user := range groupAccess {
+		users = append(users, user.User)
 	}
 	return users
 }

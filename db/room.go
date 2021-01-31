@@ -7,6 +7,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type qroom struct {
+	users    []Users
+	rooms    []Rooms
+	accesses []RoomAccess
+	owner    Users
+	room     Rooms
+	access   RoomAccess
+}
+
 func (room *Rooms) Create(db *gorm.DB, user *Users) error {
 	if err := db.Select("name").Where("name = ?", room.Name).First(&room).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 		return &NameAlredyExists{}
@@ -90,11 +99,11 @@ func (room *Rooms) KickGroups(db *gorm.DB, groupsID []string, user *Users) error
 }
 
 func GetModRoom(db *gorm.DB, id string, user *Users) (*Rooms, error) {
-	var roomAccess RoomAccess
-	if err := db.Joins("Room").Where("user_id = ? AND level_id = ?", user.ID, 1).Or("user_id = ? AND level_id = ?", user.ID, 2).First(&roomAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	var qr qroom
+	if err := db.Joins("Room").Where("user_id = ? AND level_id = ?", user.ID, 1).Or("user_id = ? AND level_id = ?", user.ID, 2).First(&qr.access).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors.New("group_not_found")
 	}
-	return &roomAccess.Room, nil
+	return &qr.access.Room, nil
 }
 
 func (room *Rooms) DeleteRoom(db *gorm.DB, user *Users) error {
@@ -109,21 +118,63 @@ func (room *Rooms) DeleteRoom(db *gorm.DB, user *Users) error {
 }
 
 func (room *Rooms) checkOwner(db *gorm.DB, user *Users) error {
-	var roomAccess RoomAccess
+	var qr qroom
 	if err := user.Check(db); err != nil {
 		return &UserNotFound{}
-	} else if err := db.Where("room_id = ? AND level_id = ? AND user_id = ?", room.ID, 1, user.ID).First(&roomAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if err := db.Where("room_id = ? AND level_id = ? AND user_id = ?", room.ID, 1, user.ID).First(&qr.access).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("not_owner")
 	}
 	return nil
 }
 
 func (room *Rooms) checkOwnerOrEditor(db *gorm.DB, user *Users) error {
-	var roomAccess RoomAccess
+	var qr qroom
 	if err := user.Check(db); err != nil {
 		return &UserNotFound{}
-	} else if err := db.Where("room_id = ? AND level_id = ? AND user_id = ?", room.ID, 1, user.ID).Or("room_id = ? AND level_id = ? AND user_id = ?", room.ID, 2, user.ID).First(&roomAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if err := db.Where("room_id = ? AND level_id = ? AND user_id = ?", room.ID, 1, user.ID).Or("room_id = ? AND level_id = ? AND user_id = ?", room.ID, 2, user.ID).First(&qr.access).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("not_owner_or_editor")
 	}
 	return nil
+}
+
+func GetMyRooms(db *gorm.DB, user *Users) []Rooms {
+	var qr qroom
+	db.Joins("Room").Where("user_id = ?", user.ID).Find(&qr.accesses)
+	for _, room := range qr.accesses {
+		qr.rooms = append(qr.rooms, room.Room)
+	}
+	return qr.rooms
+}
+
+func GetRooms(db *gorm.DB, id []string, user *Users) []Rooms {
+	var qr qroom
+	db.Joins("Room").Where(map[string]interface{}{"room_id": id, "user_id": user.ID}).Find(&qr.accesses)
+	for _, room := range qr.accesses {
+		qr.rooms = append(qr.rooms, room.Room)
+	}
+	return qr.rooms
+}
+
+func (room *Rooms) GetUsers(db *gorm.DB) []Users {
+	var qr qroom
+	db.Joins("User").Where("room_id = ?", room.ID).Find(&qr.access)
+	for _, user := range qr.accesses {
+		qr.users = append(qr.users, user.User)
+	}
+	return qr.users
+}
+
+func (room *Rooms) GetOwner(db *gorm.DB) Users {
+	var qr qroom
+	db.Joins("User").Where("room_id = ? AND level_id = ?", room.ID, 1).Find(&qr.access)
+	return qr.access.User
+}
+
+func (room *Rooms) GetEditors(db *gorm.DB) []Users {
+	var qr qroom
+	db.Joins("User").Where("room_id = ? AND level_id = ?", room.ID, 2).Find(&qr.accesses)
+	for _, editor := range qr.accesses {
+		qr.users = append(qr.users, editor.User)
+	}
+	return qr.users
 }
