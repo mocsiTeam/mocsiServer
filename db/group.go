@@ -7,6 +7,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type qgroup struct {
+	groups        []*Groups
+	groupAccesses []GroupAccess
+	groupAccess   GroupAccess
+	group         Groups
+	users         []*Users
+	user          Users
+}
+
 func (group *Groups) Create(db *gorm.DB, user *Users) error {
 	group.CountUsers = 1
 	if err := db.Select("name").Where("name = ?", group.Name).First(&group).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -28,68 +37,64 @@ func (group *Groups) Create(db *gorm.DB, user *Users) error {
 }
 
 func GetPublicGroups(db *gorm.DB, names []string) []*Groups {
-	var groups []*Groups
-	db.Where(map[string]interface{}{"name": names, "private": false}).Find(&groups)
-	return groups
+	var qg qgroup
+	db.Where(map[string]interface{}{"name": names, "private": false}).Find(&qg.groups)
+	return qg.groups
 }
 
 func GetPrivateGroups(db *gorm.DB, id []string, user *Users) []*Groups {
-	var groupAccess []GroupAccess
-	var groups []*Groups
-	db.Joins("Group").Where(map[string]interface{}{"group_id": id, "user_id": user.ID, "level_id": 1}).Or(map[string]interface{}{"group_id": id, "user_id": user.ID, "level_id": 2}).Find(&groupAccess)
-	for _, group := range groupAccess {
+	var qg qgroup
+	db.Joins("Group").Where(map[string]interface{}{"group_id": id, "user_id": user.ID, "level_id": 1}).Or(map[string]interface{}{"group_id": id, "user_id": user.ID, "level_id": 2}).Find(&qg.groupAccesses)
+	for _, group := range qg.groupAccesses {
 		if group.Group.Private {
-			groups = append(groups, &group.Group)
+			qg.groups = append(qg.groups, &group.Group)
 		}
 	}
-	return groups
+	return qg.groups
 }
 
 func GetMyGroups(db *gorm.DB, user *Users) []*Groups {
-	var groupAccess []GroupAccess
-	var groups []*Groups
-	db.Joins("Group").Where("user_id = ?", user.ID).Find(&groupAccess)
-	for _, group := range groupAccess {
+	var qg qgroup
+	db.Joins("Group").Where("user_id = ?", user.ID).Find(&qg.groupAccesses)
+	for _, group := range qg.groupAccesses {
 		if (group.LevelID == 3 && !group.Group.Private) || group.LevelID > 3 {
 			g := group.Group
-			groups = append(groups, &g)
+			qg.groups = append(qg.groups, &g)
 		}
 	}
-	return groups
+	return qg.groups
 }
 
 func GetModGroup(db *gorm.DB, id string, user *Users) (*Groups, error) {
-	var groupAccess GroupAccess
-	if err := db.Joins("Group").Where("user_id = ? AND level_id = ?", user.ID, 1).Or("user_id = ? AND level_id = ?", user.ID, 2).First(&groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	var qg qgroup
+	if err := db.Joins("Group").Where("user_id = ? AND level_id = ?", user.ID, 1).Or("user_id = ? AND level_id = ?", user.ID, 2).First(&qg.groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors.New("group_not_found")
 	}
-	return &groupAccess.Group, nil
+	return &qg.groupAccess.Group, nil
 }
 
 func (group *Groups) GetOwner(db *gorm.DB) *Users {
-	var groupAccess GroupAccess
-	db.Joins("User").Where("group_id = ? AND level_id = ?", group.ID, 1).First(&groupAccess)
-	return &groupAccess.User
+	var qg qgroup
+	db.Joins("User").Where("group_id = ? AND level_id = ?", group.ID, 1).First(&qg.groupAccess)
+	return &qg.groupAccess.User
 }
 
 func (group *Groups) GetUsers(db *gorm.DB) []*Users {
-	var groupAccess []*GroupAccess
-	var users []*Users
-	db.Joins("User").Where("group_id = ?", group.ID).Find(&groupAccess)
-	for _, user := range groupAccess {
-		users = append(users, &user.User)
+	var qg qgroup
+	db.Joins("User").Where("group_id = ?", group.ID).Find(&qg.groupAccesses)
+	for _, user := range qg.groupAccesses {
+		qg.users = append(qg.users, &user.User)
 	}
-	return users
+	return qg.users
 }
 
-func (group *Groups) GetEditors(db *gorm.DB) []Users {
-	var groupAccess []GroupAccess
-	var users []Users
-	db.Joins("User").Where("group_id = ? AND level_id = ?", group.ID, 2).First(&groupAccess)
-	for _, user := range groupAccess {
-		users = append(users, user.User)
+func (group *Groups) GetEditors(db *gorm.DB) []*Users {
+	var qg qgroup
+	db.Joins("User").Where("group_id = ? AND level_id = ?", group.ID, 2).First(&qg.groupAccesses)
+	for _, user := range qg.groupAccesses {
+		qg.users = append(qg.users, &user.User)
 	}
-	return users
+	return qg.users
 }
 
 func (group *Groups) AddUsers(db *gorm.DB, usersID []string, user *Users) error {
@@ -157,20 +162,20 @@ func (group *Groups) DeleteGroup(db *gorm.DB, user *Users) error {
 }
 
 func (group *Groups) checkOwner(db *gorm.DB, user *Users) error {
-	var groupAccess GroupAccess
+	var qg qgroup
 	if err := user.Check(db); err != nil {
 		return &UserNotFound{}
-	} else if err := db.Where("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 1, user.ID).First(&groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if err := db.Where("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 1, user.ID).First(&qg.groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("not_owner")
 	}
 	return nil
 }
 
 func (group *Groups) checkOwnerOrEditor(db *gorm.DB, user *Users) error {
-	var groupAccess GroupAccess
+	var qg qgroup
 	if err := user.Check(db); err != nil {
 		return &UserNotFound{}
-	} else if err := db.Where("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 1, user.ID).Or("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 2, user.ID).First(&groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if err := db.Where("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 1, user.ID).Or("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 2, user.ID).First(&qg.groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("not_owner_or_editor")
 	}
 	return nil
