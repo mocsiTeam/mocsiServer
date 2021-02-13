@@ -91,7 +91,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup
 		Firstname: user.Firstname, Lastname: user.Lastname,
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
 	mod = &model.Group{ID: strconv.Itoa(int(group.ID)), Name: group.Name,
-		CountUsers: int(group.CountUsers), Owner: owner, Users: []*model.User{owner}}
+		CountUsers: int(group.CountUsers), Owner: owner, Users: []*model.User{owner}, Editors: []*model.User{owner}}
 	return
 }
 
@@ -165,7 +165,7 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 		Firstname: user.Firstname, Lastname: user.Lastname,
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
 	return &model.Room{ID: strconv.Itoa(int(room.ID)), Name: room.Name,
-		Link: room.Link, Owner: owner, Users: []*model.User{owner}}, nil
+		Link: room.Link, Owner: owner, Users: []*model.User{owner}, Editors: []*model.User{owner}}, nil
 }
 
 func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input *model.UsersToRoom) (status string, err error) {
@@ -300,9 +300,9 @@ func (r *queryResolver) GetGroups(ctx context.Context, input model.InfoGroups) (
 		panic("access denied")
 	}
 	if input.IsPrivate {
-		return getGroups(db.GetPrivateGroups(DB, input.GroupsID, user), input.GroupsID, input.IsPrivate), nil
+		return getGroups(db.GetPrivateGroups(DB, input.GroupsID, user)), nil
 	}
-	return getGroups(db.GetPublicGroups(DB, input.GroupsID), input.GroupsID, input.IsPrivate), nil
+	return getGroups(db.GetPublicGroups(DB, input.GroupsID)), nil
 }
 
 func (r *queryResolver) GetMyGroups(ctx context.Context) (mod []*model.Group, err error) {
@@ -311,7 +311,7 @@ func (r *queryResolver) GetMyGroups(ctx context.Context) (mod []*model.Group, er
 	if user = auth.ForContext(ctx); user == nil {
 		panic("access denied")
 	}
-	return getGroups(db.GetMyGroups(DB, user), []string{}, true), nil
+	return getGroups(db.GetMyGroups(DB, user)), nil
 }
 
 func (r *queryResolver) GetMyRooms(ctx context.Context) (mod []*model.Room, err error) {
@@ -349,79 +349,69 @@ type queryResolver struct{ *Resolver }
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
 var DB *gorm.DB = db.Connector()
 
-func getGroups(groups []*db.Groups, groupsID []string, isPrivate bool) []*model.Group {
+func getGroups(groups []*db.Groups) []*model.Group {
 	var gettingGroups []*model.Group
-	groupsMap := make(map[string]bool)
-	for _, v := range groupsID {
-		groupsMap[v] = false
-	}
 	for _, group := range groups {
-		groupsMap[getNameOrIDFromGroup(group, isPrivate)] = true
-		owner := group.GetOwner(DB)
-		var gettingUsers []*model.User
-		var gettingEditors []*model.User
-		for _, user := range group.GetUsers(DB) {
-			gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)),
-				Nickname:  user.Nickname,
-				Firstname: user.Firstname, Lastname: user.Lastname,
-				Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
-		}
-		for _, editor := range group.GetEditors(DB) {
-			gettingEditors = append(gettingUsers, &model.User{ID: strconv.Itoa(int(editor.ID)),
-				Nickname:  editor.Nickname,
-				Firstname: editor.Firstname, Lastname: editor.Lastname,
-				Email: editor.Email, Role: strconv.Itoa(int(editor.RoleID))})
-		}
+		pack := packagingOfUsers(group)
 		gettingGroups = append(gettingGroups, &model.Group{ID: strconv.Itoa(int(group.ID)),
 			Name: group.Name, CountUsers: int(group.CountUsers),
-			Owner: &model.User{ID: strconv.Itoa(int(owner.ID)),
-				Nickname: owner.Nickname, Email: owner.Email},
-			Users: gettingUsers, Editors: gettingEditors})
-	}
-	if len(groups) != len(groupsID) {
-		for _, v := range groupsID {
-			if exist := groupsMap[v]; !exist {
-				gettingGroups = append(gettingGroups, &model.Group{ID: "0", Name: v, CountUsers: 0,
-					Error: "group_not_found"})
-			}
-		}
+			Owner: &model.User{ID: strconv.Itoa(int(pack.owner.ID)),
+				Nickname: pack.owner.Nickname, Email: pack.owner.Email},
+			Users: pack.modelUsers, Editors: pack.modelUsers})
 	}
 	return gettingGroups
 }
 
-func getRooms(rooms []db.Rooms) []*model.Room {
+func getRooms(rooms []*db.Rooms) []*model.Room {
 	var gettingRooms []*model.Room
 	for _, room := range rooms {
-		owner := room.GetOwner(DB)
-		var gettingUsers []*model.User
-		var gettingEditors []*model.User
-		for _, user := range room.GetUsers(DB) {
-			gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)),
-				Nickname:  user.Nickname,
-				Firstname: user.Firstname, Lastname: user.Lastname,
-				Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
-		}
-		for _, editor := range room.GetEditors(DB) {
-			gettingEditors = append(gettingUsers, &model.User{ID: strconv.Itoa(int(editor.ID)),
-				Nickname:  editor.Nickname,
-				Firstname: editor.Firstname, Lastname: editor.Lastname,
-				Email: editor.Email, Role: strconv.Itoa(int(editor.RoleID))})
-		}
+		pack := packagingOfUsers(room)
 		gettingRooms = append(gettingRooms, &model.Room{
 			ID: strconv.Itoa(int(room.ID)), Name: room.Name, Link: room.Link,
-			Owner: &model.User{ID: strconv.Itoa(int(owner.ID)),
-				Nickname: owner.Nickname, Email: owner.Email},
-			Editors: gettingEditors, Users: gettingUsers,
-		})
+			Owner: &model.User{ID: strconv.Itoa(int(pack.owner.ID)),
+				Nickname: pack.owner.Nickname, Email: pack.owner.Email},
+			Users: pack.modelUsers, Editors: pack.modelUsers})
 	}
 	return gettingRooms
 }
 
-func getNameOrIDFromGroup(group *db.Groups, isPrivate bool) string {
-	if isPrivate {
-		return strconv.Itoa(int(group.ID))
+type pocket struct {
+	users        []*db.Users
+	editors      []*db.Users
+	modelUsers   []*model.User
+	modelEditors []*model.User
+	owner        *db.Users
+}
+
+func packagingOfUsers(src interface{}) pocket {
+	var pack pocket
+	switch v := src.(type) {
+	case db.Rooms:
+		room := v
+		pack.owner = room.GetOwner(DB)
+		pack.editors = room.GetEditors(DB)
+		pack.users = room.GetUsers(DB)
+	case db.Groups:
+		group := v
+		pack.owner = group.GetOwner(DB)
+		pack.editors = group.GetEditors(DB)
+		pack.users = group.GetUsers(DB)
 	}
-	return group.Name
+	for _, user := range pack.users {
+		pack.modelUsers = append(pack.modelUsers, &model.User{ID: strconv.Itoa(int(user.ID)),
+			Nickname:  user.Nickname,
+			Firstname: user.Firstname, Lastname: user.Lastname,
+			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+	}
+	pack.modelEditors = append(pack.modelEditors, &model.User{ID: strconv.Itoa(int(pack.owner.ID)),
+		Nickname: pack.owner.Nickname, Email: pack.owner.Email})
+	for _, editor := range pack.editors {
+		pack.modelEditors = append(pack.modelEditors, &model.User{ID: strconv.Itoa(int(editor.ID)),
+			Nickname:  editor.Nickname,
+			Firstname: editor.Firstname, Lastname: editor.Lastname,
+			Email: editor.Email, Role: strconv.Itoa(int(editor.RoleID))})
+	}
+	return pack
 }
 
 func panicIf(err error) {
