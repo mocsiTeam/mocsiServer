@@ -18,7 +18,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (mod *model.Tokens, err error) {
+func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.Tokens, error) {
+	var err error
+	var mod *model.Tokens
 	defer getReport(&err)
 	mod = &model.Tokens{}
 	var newUser = db.Users{
@@ -42,7 +44,9 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 	return mod, nil
 }
 
-func (r *mutationResolver) Login(ctx context.Context, input model.Login) (model *model.Tokens, err error) {
+func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.Tokens, error) {
+	var err error
+	var model *model.Tokens
 	defer getReport(&err)
 	var user = db.Users{
 		Nickname: input.Nickname,
@@ -60,10 +64,11 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (model 
 	DB.Save(&user)
 	model.AccessToken = accessToken
 	model.RefreshToken = refreshToken
-	return
+	return model, nil
 }
 
-func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (token string, err error) {
+func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user db.Users
 	userID, err := jwt.ParseToken(input.Token)
@@ -73,12 +78,14 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 	if refreshToken != input.Token {
 		panic("invalid refresh token")
 	}
-	token, err = jwt.GenerateAccessToken(user.Nickname, userID)
+	token, err := jwt.GenerateAccessToken(user.Nickname, userID)
 	panicIf(err)
-	return
+	return token, nil
 }
 
-func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup) (mod *model.Group, err error) {
+func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup) (*model.Group, error) {
+	var err error
+	var mod *model.Group
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -92,10 +99,11 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
 	mod = &model.Group{ID: strconv.Itoa(int(group.ID)), Name: group.Name,
 		CountUsers: int(group.CountUsers), Owner: owner, Users: []*model.User{owner}, Editors: []*model.User{owner}}
-	return
+	return mod, nil
 }
 
-func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.UsersToGroup) (status string, err error) {
+func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -108,7 +116,8 @@ func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.User
 	return "users_added", nil
 }
 
-func (r *mutationResolver) AddEditorsToGroup(ctx context.Context, input model.UsersToGroup) (status string, err error) {
+func (r *mutationResolver) AddEditorsToGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -121,7 +130,8 @@ func (r *mutationResolver) AddEditorsToGroup(ctx context.Context, input model.Us
 	return "users_became_editors", nil
 }
 
-func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.UsersToGroup) (status string, err error) {
+func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -134,7 +144,8 @@ func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.U
 	return "users_kicked", nil
 }
 
-func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (status string, err error) {
+func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -147,7 +158,8 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (statu
 	return "group_deleted", nil
 }
 
-func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) (mod *model.Room, err error) {
+func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) (*model.Room, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -168,7 +180,8 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 		Link: room.Link, Owner: owner, Users: []*model.User{owner}, Editors: []*model.User{owner}}, nil
 }
 
-func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input *model.UsersToRoom) (status string, err error) {
+func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -181,7 +194,8 @@ func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input *model.User
 	return "users_added", nil
 }
 
-func (r *mutationResolver) AddGroupToRoom(ctx context.Context, input *model.GroupsToRoom) (status string, err error) {
+func (r *mutationResolver) AddGroupToRoom(ctx context.Context, input model.GroupsToRoom) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -194,7 +208,22 @@ func (r *mutationResolver) AddGroupToRoom(ctx context.Context, input *model.Grou
 	return "groups_added", nil
 }
 
-func (r *mutationResolver) KickUsersFromRoom(ctx context.Context, input *model.UsersToRoom) (status string, err error) {
+func (r *mutationResolver) AddEditorsToRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	panicIf(err)
+	err = room.AddEditors(DB, input.UsersID, user)
+	panicIf(err)
+	return "users_became_editors", nil
+}
+
+func (r *mutationResolver) KickUsersFromRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -207,7 +236,8 @@ func (r *mutationResolver) KickUsersFromRoom(ctx context.Context, input *model.U
 	return "users_kicked", nil
 }
 
-func (r *mutationResolver) KickGroupsFromRoom(ctx context.Context, input *model.GroupsToRoom) (status string, err error) {
+func (r *mutationResolver) KickGroupsFromRoom(ctx context.Context, input model.GroupsToRoom) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -220,7 +250,22 @@ func (r *mutationResolver) KickGroupsFromRoom(ctx context.Context, input *model.
 	return "groups_kicked", nil
 }
 
-func (r *mutationResolver) DeleteRoom(ctx context.Context, input string) (status string, err error) {
+func (r *mutationResolver) KickEditorsFromRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	panicIf(err)
+	err = room.KickEditors(DB, input.UsersID, user)
+	panicIf(err)
+	return "users_became_editors", nil
+}
+
+func (r *mutationResolver) DeleteRoom(ctx context.Context, input string) (string, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -233,7 +278,8 @@ func (r *mutationResolver) DeleteRoom(ctx context.Context, input string) (status
 	return "room_deleted", nil
 }
 
-func (r *queryResolver) GetAuthUser(ctx context.Context) (mod *model.User, err error) {
+func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -246,7 +292,8 @@ func (r *queryResolver) GetAuthUser(ctx context.Context) (mod *model.User, err e
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}, nil
 }
 
-func (r *queryResolver) GetAllUsers(ctx context.Context) (mod []*model.User, err error) {
+func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) {
+	var err error
 	defer getReport(&err)
 	if us := auth.ForContext(ctx); us == nil {
 		panic("access denied")
@@ -263,7 +310,8 @@ func (r *queryResolver) GetAllUsers(ctx context.Context) (mod []*model.User, err
 	return allUsers, nil
 }
 
-func (r *queryResolver) GetUsers(ctx context.Context, input []string) (mod []*model.User, err error) {
+func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.User, error) {
+	var err error
 	defer getReport(&err)
 	if us := auth.ForContext(ctx); us == nil {
 		panic("access denied")
@@ -293,7 +341,8 @@ func (r *queryResolver) GetUsers(ctx context.Context, input []string) (mod []*mo
 	return gettingUsers, nil
 }
 
-func (r *queryResolver) GetGroups(ctx context.Context, input model.InfoGroups) (mod []*model.Group, err error) {
+func (r *queryResolver) GetGroups(ctx context.Context, input model.InfoGroups) ([]*model.Group, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -305,7 +354,8 @@ func (r *queryResolver) GetGroups(ctx context.Context, input model.InfoGroups) (
 	return getGroups(db.GetPublicGroups(DB, input.GroupsID)), nil
 }
 
-func (r *queryResolver) GetMyGroups(ctx context.Context) (mod []*model.Group, err error) {
+func (r *queryResolver) GetMyGroups(ctx context.Context) ([]*model.Group, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -314,7 +364,8 @@ func (r *queryResolver) GetMyGroups(ctx context.Context) (mod []*model.Group, er
 	return getGroups(db.GetMyGroups(DB, user)), nil
 }
 
-func (r *queryResolver) GetMyRooms(ctx context.Context) (mod []*model.Room, err error) {
+func (r *queryResolver) GetMyRooms(ctx context.Context) ([]*model.Room, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -323,7 +374,8 @@ func (r *queryResolver) GetMyRooms(ctx context.Context) (mod []*model.Room, err 
 	return getRooms(db.GetMyRooms(DB, user)), nil
 }
 
-func (r *queryResolver) GetRooms(ctx context.Context, input []string) (mod []*model.Room, err error) {
+func (r *queryResolver) GetRooms(ctx context.Context, input []string) ([]*model.Room, error) {
+	var err error
 	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
@@ -361,7 +413,6 @@ func getGroups(groups []*db.Groups) []*model.Group {
 	}
 	return gettingGroups
 }
-
 func getRooms(rooms []*db.Rooms) []*model.Room {
 	var gettingRooms []*model.Room
 	for _, room := range rooms {
@@ -413,13 +464,11 @@ func packagingOfUsers(src interface{}) pocket {
 	}
 	return pack
 }
-
 func panicIf(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
-
 func getReport(err *error) {
 	if r := recover(); r != nil {
 		switch x := r.(type) {

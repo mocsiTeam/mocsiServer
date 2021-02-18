@@ -88,7 +88,7 @@ type Query {
   getGroups(input: InfoGroups!): [Group!]
   getMyGroups: [Group!]
   getMyRooms: [Room!]
-  getRooms(input: [String!]): [Room!]
+  getRooms(input: [ID!]): [Room!]
 }
 
 type Mutation {
@@ -101,9 +101,11 @@ type Mutation {
   kickUsersFromGroup(input: UsersToGroup!): String!
   deleteGroup(input: ID!): String!
   createRoom(input: NewRoom!): Room!
-  addUsersToRoom(input: UsersToRoom): String!
-  addGroupToRoom(input: GroupsToRoom): String!
-  kickUsersFromRoom(input: UsersToRoom): String!
-  kickGroupsFromRoom(input: GroupsToRoom): String!
+  addUsersToRoom(input: UsersToRoom!): String!
+  addGroupToRoom(input: GroupsToRoom!): String!
+  addEditorsToRoom(input: UsersToRoom!): String!
+  kickUsersFromRoom(input: UsersToRoom!): String!
+  kickGroupsFromRoom(input: GroupsToRoom!): String!
+  kickEditorsFromRoom(input: UsersToRoom!): String!
   deleteRoom(input: ID!): String!
 }

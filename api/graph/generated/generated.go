@@ -54,20 +54,22 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddEditorsToGroup  func(childComplexity int, input model.UsersToGroup) int
-		AddGroupToRoom     func(childComplexity int, input *model.GroupsToRoom) int
-		AddUsersToGroup    func(childComplexity int, input model.UsersToGroup) int
-		AddUsersToRoom     func(childComplexity int, input *model.UsersToRoom) int
-		CreateGroup        func(childComplexity int, input model.NewGroup) int
-		CreateRoom         func(childComplexity int, input model.NewRoom) int
-		CreateUser         func(childComplexity int, input model.NewUser) int
-		DeleteGroup        func(childComplexity int, input string) int
-		DeleteRoom         func(childComplexity int, input string) int
-		KickGroupsFromRoom func(childComplexity int, input *model.GroupsToRoom) int
-		KickUsersFromGroup func(childComplexity int, input model.UsersToGroup) int
-		KickUsersFromRoom  func(childComplexity int, input *model.UsersToRoom) int
-		Login              func(childComplexity int, input model.Login) int
-		RefreshToken       func(childComplexity int, input model.RefreshTokenInput) int
+		AddEditorsToGroup   func(childComplexity int, input model.UsersToGroup) int
+		AddEditorsToRoom    func(childComplexity int, input model.UsersToRoom) int
+		AddGroupToRoom      func(childComplexity int, input model.GroupsToRoom) int
+		AddUsersToGroup     func(childComplexity int, input model.UsersToGroup) int
+		AddUsersToRoom      func(childComplexity int, input model.UsersToRoom) int
+		CreateGroup         func(childComplexity int, input model.NewGroup) int
+		CreateRoom          func(childComplexity int, input model.NewRoom) int
+		CreateUser          func(childComplexity int, input model.NewUser) int
+		DeleteGroup         func(childComplexity int, input string) int
+		DeleteRoom          func(childComplexity int, input string) int
+		KickEditorsFromRoom func(childComplexity int, input model.UsersToRoom) int
+		KickGroupsFromRoom  func(childComplexity int, input model.GroupsToRoom) int
+		KickUsersFromGroup  func(childComplexity int, input model.UsersToGroup) int
+		KickUsersFromRoom   func(childComplexity int, input model.UsersToRoom) int
+		Login               func(childComplexity int, input model.Login) int
+		RefreshToken        func(childComplexity int, input model.RefreshTokenInput) int
 	}
 
 	Query struct {
@@ -117,10 +119,12 @@ type MutationResolver interface {
 	KickUsersFromGroup(ctx context.Context, input model.UsersToGroup) (string, error)
 	DeleteGroup(ctx context.Context, input string) (string, error)
 	CreateRoom(ctx context.Context, input model.NewRoom) (*model.Room, error)
-	AddUsersToRoom(ctx context.Context, input *model.UsersToRoom) (string, error)
-	AddGroupToRoom(ctx context.Context, input *model.GroupsToRoom) (string, error)
-	KickUsersFromRoom(ctx context.Context, input *model.UsersToRoom) (string, error)
-	KickGroupsFromRoom(ctx context.Context, input *model.GroupsToRoom) (string, error)
+	AddUsersToRoom(ctx context.Context, input model.UsersToRoom) (string, error)
+	AddGroupToRoom(ctx context.Context, input model.GroupsToRoom) (string, error)
+	AddEditorsToRoom(ctx context.Context, input model.UsersToRoom) (string, error)
+	KickUsersFromRoom(ctx context.Context, input model.UsersToRoom) (string, error)
+	KickGroupsFromRoom(ctx context.Context, input model.GroupsToRoom) (string, error)
+	KickEditorsFromRoom(ctx context.Context, input model.UsersToRoom) (string, error)
 	DeleteRoom(ctx context.Context, input string) (string, error)
 }
 type QueryResolver interface {
@@ -209,6 +213,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.AddEditorsToGroup(childComplexity, args["input"].(model.UsersToGroup)), true
 
+	case "Mutation.addEditorsToRoom":
+		if e.complexity.Mutation.AddEditorsToRoom == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addEditorsToRoom_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddEditorsToRoom(childComplexity, args["input"].(model.UsersToRoom)), true
+
 	case "Mutation.addGroupToRoom":
 		if e.complexity.Mutation.AddGroupToRoom == nil {
 			break
@@ -219,7 +235,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddGroupToRoom(childComplexity, args["input"].(*model.GroupsToRoom)), true
+		return e.complexity.Mutation.AddGroupToRoom(childComplexity, args["input"].(model.GroupsToRoom)), true
 
 	case "Mutation.addUsersToGroup":
 		if e.complexity.Mutation.AddUsersToGroup == nil {
@@ -243,7 +259,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddUsersToRoom(childComplexity, args["input"].(*model.UsersToRoom)), true
+		return e.complexity.Mutation.AddUsersToRoom(childComplexity, args["input"].(model.UsersToRoom)), true
 
 	case "Mutation.createGroup":
 		if e.complexity.Mutation.CreateGroup == nil {
@@ -305,6 +321,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteRoom(childComplexity, args["input"].(string)), true
 
+	case "Mutation.kickEditorsFromRoom":
+		if e.complexity.Mutation.KickEditorsFromRoom == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_kickEditorsFromRoom_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.KickEditorsFromRoom(childComplexity, args["input"].(model.UsersToRoom)), true
+
 	case "Mutation.kickGroupsFromRoom":
 		if e.complexity.Mutation.KickGroupsFromRoom == nil {
 			break
@@ -315,7 +343,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.KickGroupsFromRoom(childComplexity, args["input"].(*model.GroupsToRoom)), true
+		return e.complexity.Mutation.KickGroupsFromRoom(childComplexity, args["input"].(model.GroupsToRoom)), true
 
 	case "Mutation.kickUsersFromGroup":
 		if e.complexity.Mutation.KickUsersFromGroup == nil {
@@ -339,7 +367,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.KickUsersFromRoom(childComplexity, args["input"].(*model.UsersToRoom)), true
+		return e.complexity.Mutation.KickUsersFromRoom(childComplexity, args["input"].(model.UsersToRoom)), true
 
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
@@ -702,7 +730,7 @@ type Query {
   getGroups(input: InfoGroups!): [Group!]
   getMyGroups: [Group!]
   getMyRooms: [Room!]
-  getRooms(input: [String!]): [Room!]
+  getRooms(input: [ID!]): [Room!]
 }
 
 type Mutation {
@@ -715,10 +743,12 @@ type Mutation {
   kickUsersFromGroup(input: UsersToGroup!): String!
   deleteGroup(input: ID!): String!
   createRoom(input: NewRoom!): Room!
-  addUsersToRoom(input: UsersToRoom): String!
-  addGroupToRoom(input: GroupsToRoom): String!
-  kickUsersFromRoom(input: UsersToRoom): String!
-  kickGroupsFromRoom(input: GroupsToRoom): String!
+  addUsersToRoom(input: UsersToRoom!): String!
+  addGroupToRoom(input: GroupsToRoom!): String!
+  addEditorsToRoom(input: UsersToRoom!): String!
+  kickUsersFromRoom(input: UsersToRoom!): String!
+  kickGroupsFromRoom(input: GroupsToRoom!): String!
+  kickEditorsFromRoom(input: UsersToRoom!): String!
   deleteRoom(input: ID!): String!
 }`, BuiltIn: false},
 }
@@ -743,13 +773,28 @@ func (ec *executionContext) field_Mutation_addEditorsToGroup_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_addEditorsToRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UsersToRoom
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUsersToRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToRoom(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addGroupToRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.GroupsToRoom
+	var arg0 model.GroupsToRoom
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOGroupsToRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐGroupsToRoom(ctx, tmp)
+		arg0, err = ec.unmarshalNGroupsToRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐGroupsToRoom(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -776,10 +821,10 @@ func (ec *executionContext) field_Mutation_addUsersToGroup_args(ctx context.Cont
 func (ec *executionContext) field_Mutation_addUsersToRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.UsersToRoom
+	var arg0 model.UsersToRoom
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOUsersToRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToRoom(ctx, tmp)
+		arg0, err = ec.unmarshalNUsersToRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToRoom(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -863,13 +908,28 @@ func (ec *executionContext) field_Mutation_deleteRoom_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_kickEditorsFromRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UsersToRoom
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUsersToRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToRoom(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_kickGroupsFromRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.GroupsToRoom
+	var arg0 model.GroupsToRoom
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOGroupsToRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐGroupsToRoom(ctx, tmp)
+		arg0, err = ec.unmarshalNGroupsToRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐGroupsToRoom(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -896,10 +956,10 @@ func (ec *executionContext) field_Mutation_kickUsersFromGroup_args(ctx context.C
 func (ec *executionContext) field_Mutation_kickUsersFromRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.UsersToRoom
+	var arg0 model.UsersToRoom
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOUsersToRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToRoom(ctx, tmp)
+		arg0, err = ec.unmarshalNUsersToRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToRoom(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -974,7 +1034,7 @@ func (ec *executionContext) field_Query_getRooms_args(ctx context.Context, rawAr
 	var arg0 []string
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+		arg0, err = ec.unmarshalOID2ᚕstringᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1678,7 +1738,7 @@ func (ec *executionContext) _Mutation_addUsersToRoom(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AddUsersToRoom(rctx, args["input"].(*model.UsersToRoom))
+		return ec.resolvers.Mutation().AddUsersToRoom(rctx, args["input"].(model.UsersToRoom))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1720,7 +1780,49 @@ func (ec *executionContext) _Mutation_addGroupToRoom(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AddGroupToRoom(rctx, args["input"].(*model.GroupsToRoom))
+		return ec.resolvers.Mutation().AddGroupToRoom(rctx, args["input"].(model.GroupsToRoom))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_addEditorsToRoom(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addEditorsToRoom_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddEditorsToRoom(rctx, args["input"].(model.UsersToRoom))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1762,7 +1864,7 @@ func (ec *executionContext) _Mutation_kickUsersFromRoom(ctx context.Context, fie
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().KickUsersFromRoom(rctx, args["input"].(*model.UsersToRoom))
+		return ec.resolvers.Mutation().KickUsersFromRoom(rctx, args["input"].(model.UsersToRoom))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1804,7 +1906,49 @@ func (ec *executionContext) _Mutation_kickGroupsFromRoom(ctx context.Context, fi
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().KickGroupsFromRoom(rctx, args["input"].(*model.GroupsToRoom))
+		return ec.resolvers.Mutation().KickGroupsFromRoom(rctx, args["input"].(model.GroupsToRoom))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_kickEditorsFromRoom(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_kickEditorsFromRoom_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().KickEditorsFromRoom(rctx, args["input"].(model.UsersToRoom))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4255,6 +4399,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "addEditorsToRoom":
+			out.Values[i] = ec._Mutation_addEditorsToRoom(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "kickUsersFromRoom":
 			out.Values[i] = ec._Mutation_kickUsersFromRoom(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -4262,6 +4411,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "kickGroupsFromRoom":
 			out.Values[i] = ec._Mutation_kickGroupsFromRoom(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "kickEditorsFromRoom":
+			out.Values[i] = ec._Mutation_kickEditorsFromRoom(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -4810,6 +4964,11 @@ func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiSer
 	return ec._Group(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNGroupsToRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐGroupsToRoom(ctx context.Context, v interface{}) (model.GroupsToRoom, error) {
+	res, err := ec.unmarshalInputGroupsToRoom(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4959,6 +5118,11 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServ
 
 func (ec *executionContext) unmarshalNUsersToGroup2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToGroup(ctx context.Context, v interface{}) (model.UsersToGroup, error) {
 	res, err := ec.unmarshalInputUsersToGroup(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUsersToRoom2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToRoom(ctx context.Context, v interface{}) (model.UsersToRoom, error) {
+	res, err := ec.unmarshalInputUsersToRoom(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -5255,14 +5419,6 @@ func (ec *executionContext) marshalOGroup2ᚕᚖgithubᚗcomᚋmocsiTeamᚋmocsi
 	return ret
 }
 
-func (ec *executionContext) unmarshalOGroupsToRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐGroupsToRoom(ctx context.Context, v interface{}) (*model.GroupsToRoom, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputGroupsToRoom(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
 	if v == nil {
 		return nil, nil
@@ -5437,14 +5593,6 @@ func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋmocsiTeamᚋmocsiS
 	}
 	wg.Wait()
 	return ret
-}
-
-func (ec *executionContext) unmarshalOUsersToRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUsersToRoom(ctx context.Context, v interface{}) (*model.UsersToRoom, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputUsersToRoom(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
