@@ -31,8 +31,6 @@ func (user *Users) Create(db *gorm.DB) error {
 		return &NameAlredyExists{}
 	} else if err := db.Select("email").Where("email = ?", user.Email).First(&user).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 		return &EmailAlredyExists{}
-	} else if err := db.Create(&user).Error; err != nil {
-		return err
 	}
 	return nil
 }

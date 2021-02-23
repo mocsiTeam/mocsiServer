@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/mocsiTeam/mocsiServer/api/graph/generated"
@@ -18,6 +19,10 @@ import (
 )
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.Tokens, error) {
+	var err error
+	var mod *model.Tokens
+	defer getReport(&err)
+	mod = &model.Tokens{}
 	var newUser = db.Users{
 		Email:     input.Email,
 		Nickname:  input.Nickname,
@@ -26,138 +31,272 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 		Pass:      input.Password,
 		RoleID:    3,
 	}
-	if err := newUser.Create(DB); err != nil {
-		return &model.Tokens{}, err
-	}
+	err = newUser.Create(DB)
+	panicIf(err)
 	accessToken, err := jwt.GenerateAccessToken(newUser.Nickname, strconv.Itoa(int(newUser.ID)))
-	if err != nil {
-		return &model.Tokens{}, err
-	}
+	panicIf(err)
 	refreshToken, err := jwt.GenerateRefreshToken(newUser.Nickname, newUser.Email, strconv.Itoa(int(newUser.ID)))
-	if err != nil {
-		return &model.Tokens{}, err
-	}
+	panicIf(err)
 	newUser.RefreshToken = refreshToken
 	DB.Save(&newUser)
-	return &model.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
+	mod.AccessToken = accessToken
+	mod.RefreshToken = refreshToken
+	return mod, nil
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.Tokens, error) {
+	var err error
+	var model *model.Tokens
+	defer getReport(&err)
 	var user = db.Users{
 		Nickname: input.Nickname,
 		Pass:     input.Password,
 	}
 	if correct := user.Authenticate(DB); !correct {
-		return &model.Tokens{}, &db.WrongUsernameOrPasswordError{}
+		panic("wrong username or password")
 	}
 	userID := strconv.Itoa(int(user.ID))
 	accessToken, err := jwt.GenerateAccessToken(user.Nickname, userID)
-	if err != nil {
-		return &model.Tokens{}, err
-	}
+	panicIf(err)
 	refreshToken, err := jwt.GenerateRefreshToken(user.Nickname, user.Email, userID)
-	if err != nil {
-		return &model.Tokens{}, err
-	}
+	panicIf(err)
 	user.RefreshToken = refreshToken
 	DB.Save(&user)
-	return &model.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
+	model.AccessToken = accessToken
+	model.RefreshToken = refreshToken
+	return model, nil
 }
 
 func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
+	var err error
+	defer getReport(&err)
 	var user db.Users
 	userID, err := jwt.ParseToken(input.Token)
-	if err != nil {
-		return "", fmt.Errorf("access denied")
-	}
+	panicIf(err)
 	refreshToken, err := user.GetRefreshToken(DB, userID)
-	if err != nil {
-		return "", nil
-	}
+	panicIf(err)
 	if refreshToken != input.Token {
-		return "", errors.New("invalid refresh token")
+		panic("invalid refresh token")
 	}
 	token, err := jwt.GenerateAccessToken(user.Nickname, userID)
-	if err != nil {
-		return "", err
-	}
+	panicIf(err)
 	return token, nil
 }
 
-func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NameGroup) (*model.Group, error) {
+func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup) (*model.Group, error) {
+	var err error
+	var mod *model.Group
+	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		return &model.Group{}, fmt.Errorf("access denied")
+		panic("access denied")
 	}
-	group := &db.Groups{Name: input.Name}
-	if err := group.Create(DB, user); err != nil {
-		return &model.Group{}, err
-	}
+	group := &db.Groups{Name: input.Name, Private: input.Private}
+	err = group.Create(DB, user)
+	panicIf(err)
 	owner := &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
 		Firstname: user.Firstname, Lastname: user.Lastname,
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
-	return &model.Group{Name: group.Name, CountUsers: int(group.CountUsers),
-		Owner: owner, Users: []*model.User{owner}}, nil
+	mod = &model.Group{ID: strconv.Itoa(int(group.ID)), Name: group.Name,
+		CountUsers: int(group.CountUsers), Owner: owner, Users: []*model.User{owner}, Editors: []*model.User{owner}}
+	return mod, nil
 }
 
-func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.GroupUsers) (string, error) {
+func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
+	var err error
+	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		return "", nil
+		panic("access denied")
 	}
-	group := db.GetGroups(DB, []string{input.NameGroup})
-	if len(group) == 0 {
-		return "", errors.New("group_not_found")
-	} else if err := group[0].AddUsers(DB, input.UsersID, user); err != nil {
-		return "", err
-	}
+	group, err := db.GetModGroup(DB, input.GroupID, user)
+	panicIf(err)
+	err = group.AddUsers(DB, input.UsersID, user)
+	panicIf(err)
 	return "users_added", nil
 }
 
-func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.GroupUsers) (string, error) {
+func (r *mutationResolver) AddEditorsToGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
+	var err error
+	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		return "", nil
+		panic("access denied")
 	}
-	group := db.GetGroups(DB, []string{input.NameGroup})
-	if len(group) == 0 {
-		return "", errors.New("group_not_found")
-	} else if err := group[0].KickUsers(DB, input.UsersID, user); err != nil {
-		return "", err
+	group, err := db.GetModGroup(DB, input.GroupID, user)
+	panicIf(err)
+	err = group.AddEditors(DB, input.UsersID, user)
+	panicIf(err)
+	return "users_became_editors", nil
+}
+
+func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
 	}
+	group, err := db.GetModGroup(DB, input.GroupID, user)
+	panicIf(err)
+	err = group.KickUsers(DB, input.UsersID, user)
+	panicIf(err)
 	return "users_kicked", nil
 }
 
-func (r *mutationResolver) DeleteGroup(ctx context.Context, input model.NameGroup) (string, error) {
+func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (string, error) {
+	var err error
+	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		return "", nil
+		panic("access denied")
 	}
-	group := db.GetGroups(DB, []string{input.Name})
-	if len(group) == 0 {
-		return "", errors.New("group_not_found")
-	} else if err := group[0].DeleteGroup(DB, user); err != nil {
-		return "", err
-	}
+	group, err := db.GetModGroup(DB, input, user)
+	panicIf(err)
+	err = group.DeleteGroup(DB, user)
+	panicIf(err)
 	return "group_deleted", nil
 }
 
-func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
+func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) (*model.Room, error) {
+	var err error
+	defer getReport(&err)
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		return &model.User{}, fmt.Errorf("access denied")
+		panic("access denied")
 	}
-	if err := user.Get(DB); err != nil {
-		return &model.User{}, err
+	hostname, _ := os.Hostname()
+	room := &db.Rooms{
+		Name: input.Name,
+		Link: "https://" + hostname + "/" + input.Name,
+		Pass: input.Password,
 	}
+	err = room.Create(DB, user)
+	panicIf(err)
+	owner := &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
+		Firstname: user.Firstname, Lastname: user.Lastname,
+		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
+	return &model.Room{ID: strconv.Itoa(int(room.ID)), Name: room.Name,
+		Link: room.Link, Owner: owner, Users: []*model.User{owner}, Editors: []*model.User{owner}}, nil
+}
+
+func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	panicIf(err)
+	err = room.AddUsers(DB, input.UsersID, user)
+	panicIf(err)
+	return "users_added", nil
+}
+
+func (r *mutationResolver) AddGroupToRoom(ctx context.Context, input model.GroupsToRoom) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	panicIf(err)
+	err = room.AddGroups(DB, input.GroupsID, user)
+	panicIf(err)
+	return "groups_added", nil
+}
+
+func (r *mutationResolver) AddEditorsToRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	panicIf(err)
+	err = room.AddEditors(DB, input.UsersID, user)
+	panicIf(err)
+	return "users_became_editors", nil
+}
+
+func (r *mutationResolver) KickUsersFromRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	panicIf(err)
+	err = room.KickUsers(DB, input.UsersID, user)
+	panicIf(err)
+	return "users_kicked", nil
+}
+
+func (r *mutationResolver) KickGroupsFromRoom(ctx context.Context, input model.GroupsToRoom) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	panicIf(err)
+	err = room.KickGroups(DB, input.GroupsID, user)
+	panicIf(err)
+	return "groups_kicked", nil
+}
+
+func (r *mutationResolver) KickEditorsFromRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	room, err := db.GetModRoom(DB, input.RoomID, user)
+	panicIf(err)
+	err = room.KickEditors(DB, input.UsersID, user)
+	panicIf(err)
+	return "users_became_editors", nil
+}
+
+func (r *mutationResolver) DeleteRoom(ctx context.Context, input string) (string, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	group, err := db.GetModRoom(DB, input, user)
+	panicIf(err)
+	err = group.DeleteRoom(DB, user)
+	panicIf(err)
+	return "room_deleted", nil
+}
+
+func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	err = user.Get(DB)
+	panicIf(err)
 	return &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
 		Firstname: user.Firstname, Lastname: user.Lastname,
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}, nil
 }
 
 func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) {
+	var err error
+	defer getReport(&err)
 	if us := auth.ForContext(ctx); us == nil {
-		return []*model.User{}, fmt.Errorf("access denied")
+		panic("access denied")
 	}
 	var (
 		users    db.Users
@@ -172,58 +311,77 @@ func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) 
 }
 
 func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.User, error) {
+	var err error
+	defer getReport(&err)
 	if us := auth.ForContext(ctx); us == nil {
-		return []*model.User{}, fmt.Errorf("access denied")
+		panic("access denied")
 	}
 	var (
 		users        db.Users
 		gettingUsers []*model.User
 	)
+	usersMap := make(map[string]bool)
+	for _, user := range input {
+		usersMap[user] = false
+	}
 	for _, user := range users.GetUsers(DB, input) {
-		for _, v := range input {
-			if v == user.Nickname {
-				gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
-					Firstname: user.Firstname, Lastname: user.Lastname,
-					Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
-			} else {
-				gettingUsers = append(gettingUsers, &model.User{ID: "0", Nickname: v,
-					Firstname: "", Lastname: "",
-					Email: "", Role: "0", Error: "user_not_found"})
-			}
+		usersMap[user.Nickname] = false
+		gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)),
+			Nickname:  user.Nickname,
+			Firstname: user.Firstname, Lastname: user.Lastname,
+			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+	}
+	for _, user := range input {
+		if exist := usersMap[user]; !exist {
+			gettingUsers = append(gettingUsers, &model.User{ID: "0", Nickname: user,
+				Firstname: "", Lastname: "",
+				Email: "", Role: "0", Error: "user_not_found"})
 		}
 	}
 	return gettingUsers, nil
 }
 
-func (r *queryResolver) GetGroups(ctx context.Context, input []string) ([]*model.Group, error) {
-	if us := auth.ForContext(ctx); us == nil {
-		return []*model.Group{}, fmt.Errorf("access denied")
+func (r *queryResolver) GetGroups(ctx context.Context, input model.InfoGroups) ([]*model.Group, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
 	}
-	var (
-		groups        []*db.Groups
-		gettingGroups []*model.Group
-	)
-	groups = db.GetGroups(DB, input)
-	for _, group := range groups {
-		for _, v := range input {
-			if v == group.Name {
-				owner := group.GetOwner(DB)
-				var gettingUsers []*model.User
-				for _, user := range group.GetUsers(DB) {
-					gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)), Nickname: user.Nickname,
-						Firstname: user.Firstname, Lastname: user.Lastname,
-						Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
-				}
-				gettingGroups = append(gettingGroups, &model.Group{Name: group.Name, CountUsers: int(group.CountUsers),
-					Owner: &model.User{ID: strconv.Itoa(int(owner.ID)), Nickname: owner.Nickname, Email: owner.Email},
-					Users: gettingUsers})
-			} else {
-				gettingGroups = append(gettingGroups, &model.Group{Name: v, CountUsers: 0,
-					Owner: &model.User{}, Users: []*model.User{}, Error: "group_not_found"})
-			}
-		}
+	if input.IsPrivate {
+		return getGroups(db.GetPrivateGroups(DB, input.GroupsID, user)), nil
 	}
-	return gettingGroups, nil
+	return getGroups(db.GetPublicGroups(DB, input.GroupsID)), nil
+}
+
+func (r *queryResolver) GetMyGroups(ctx context.Context) ([]*model.Group, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	return getGroups(db.GetMyGroups(DB, user)), nil
+}
+
+func (r *queryResolver) GetMyRooms(ctx context.Context) ([]*model.Room, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	return getRooms(db.GetMyRooms(DB, user)), nil
+}
+
+func (r *queryResolver) GetRooms(ctx context.Context, input []string) ([]*model.Room, error) {
+	var err error
+	defer getReport(&err)
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("access denied")
+	}
+	return getRooms(db.GetRooms(DB, input, user)), nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
@@ -242,3 +400,86 @@ type queryResolver struct{ *Resolver }
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
 var DB *gorm.DB = db.Connector()
+
+func getGroups(groups []*db.Groups) []*model.Group {
+	var gettingGroups []*model.Group
+	for _, group := range groups {
+		pack := packagingOfUsers(group)
+		gettingGroups = append(gettingGroups, &model.Group{ID: strconv.Itoa(int(group.ID)),
+			Name: group.Name, CountUsers: int(group.CountUsers),
+			Owner: &model.User{ID: strconv.Itoa(int(pack.owner.ID)),
+				Nickname: pack.owner.Nickname, Email: pack.owner.Email},
+			Users: pack.modelUsers, Editors: pack.modelUsers})
+	}
+	return gettingGroups
+}
+func getRooms(rooms []*db.Rooms) []*model.Room {
+	var gettingRooms []*model.Room
+	for _, room := range rooms {
+		pack := packagingOfUsers(room)
+		gettingRooms = append(gettingRooms, &model.Room{
+			ID: strconv.Itoa(int(room.ID)), Name: room.Name, Link: room.Link,
+			Owner: &model.User{ID: strconv.Itoa(int(pack.owner.ID)),
+				Nickname: pack.owner.Nickname, Email: pack.owner.Email},
+			Users: pack.modelUsers, Editors: pack.modelUsers})
+	}
+	return gettingRooms
+}
+
+type pocket struct {
+	users        []*db.Users
+	editors      []*db.Users
+	modelUsers   []*model.User
+	modelEditors []*model.User
+	owner        *db.Users
+}
+
+func packagingOfUsers(src interface{}) pocket {
+	var pack pocket
+	switch v := src.(type) {
+	case db.Rooms:
+		room := v
+		pack.owner = room.GetOwner(DB)
+		pack.editors = room.GetEditors(DB)
+		pack.users = room.GetUsers(DB)
+	case db.Groups:
+		group := v
+		pack.owner = group.GetOwner(DB)
+		pack.editors = group.GetEditors(DB)
+		pack.users = group.GetUsers(DB)
+	}
+	for _, user := range pack.users {
+		pack.modelUsers = append(pack.modelUsers, &model.User{ID: strconv.Itoa(int(user.ID)),
+			Nickname:  user.Nickname,
+			Firstname: user.Firstname, Lastname: user.Lastname,
+			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
+	}
+	pack.modelEditors = append(pack.modelEditors, &model.User{ID: strconv.Itoa(int(pack.owner.ID)),
+		Nickname: pack.owner.Nickname, Email: pack.owner.Email})
+	for _, editor := range pack.editors {
+		pack.modelEditors = append(pack.modelEditors, &model.User{ID: strconv.Itoa(int(editor.ID)),
+			Nickname:  editor.Nickname,
+			Firstname: editor.Firstname, Lastname: editor.Lastname,
+			Email: editor.Email, Role: strconv.Itoa(int(editor.RoleID))})
+	}
+	return pack
+}
+func panicIf(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func getReport(err *error) {
+	if r := recover(); r != nil {
+		switch x := r.(type) {
+		case string:
+			*err = errors.New(x)
+		case error:
+			*err = x
+		default:
+			fmt.Println(x)
+			*err = errors.New("Unknown error")
+		}
+		fmt.Println(err)
+	}
+}
