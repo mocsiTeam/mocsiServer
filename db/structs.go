@@ -15,10 +15,12 @@ type Groups struct {
 	gorm.Model
 	Name       string `gorm:"unique; not null;"`
 	CountUsers uint
+	Private    bool
 }
 
 type Rooms struct {
 	gorm.Model
+	//TODO CountUsers
 	Name  string `gorm:"unique; not null;"`
 	Link  string `gorm:"unique; not null;"`
 	Pass  string
