@@ -198,3 +198,15 @@ func (room *Rooms) AddEditors(db *gorm.DB, usersID []string, user *Users) error 
 	}
 	return nil
 }
+
+func (room *Rooms) KickEditors(db *gorm.DB, usersID []string, user *Users) error {
+	if err := room.checkOwner(db, user); err != nil {
+		return err
+	}
+	for _, id := range usersID {
+		idint, _ := strconv.Atoi(id)
+		ra := RoomAccess{UserID: uint(idint), RoomID: room.ID, LevelID: 3}
+		db.Save(&ra)
+	}
+	return nil
+}
