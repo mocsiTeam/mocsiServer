@@ -9,6 +9,7 @@ type User {
   error: String!
 }
 
+
 type Tokens {
   accessToken: String!
   refreshToken: String!

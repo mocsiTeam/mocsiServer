@@ -651,6 +651,7 @@ var sources = []*ast.Source{
   error: String!
 }
 
+
 type Tokens {
   accessToken: String!
   refreshToken: String!
