@@ -84,7 +84,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup
 
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	group := &db.Groups{Name: input.Name, Private: input.Private}
 	err := group.Create(DB, user)
@@ -99,7 +99,7 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup
 func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	group, err := db.GetModGroup(DB, input.GroupID, user)
 	panicIf(err)
@@ -111,7 +111,7 @@ func (r *mutationResolver) AddUsersToGroup(ctx context.Context, input model.User
 func (r *mutationResolver) AddEditorsToGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	group, err := db.GetModGroup(DB, input.GroupID, user)
 	panicIf(err)
@@ -123,7 +123,7 @@ func (r *mutationResolver) AddEditorsToGroup(ctx context.Context, input model.Us
 func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.UsersToGroup) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	group, err := db.GetModGroup(DB, input.GroupID, user)
 	panicIf(err)
@@ -135,7 +135,7 @@ func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.U
 func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	group, err := db.GetModGroup(DB, input, user)
 	panicIf(err)
@@ -147,7 +147,7 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (strin
 func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) (*model.Room, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	hostname, _ := os.Hostname()
 	room := &db.Rooms{
@@ -167,7 +167,7 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	room, err := db.GetModRoom(DB, input.RoomID, user)
 	panicIf(err)
@@ -179,7 +179,7 @@ func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input model.Users
 func (r *mutationResolver) AddGroupToRoom(ctx context.Context, input model.GroupsToRoom) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	room, err := db.GetModRoom(DB, input.RoomID, user)
 	panicIf(err)
@@ -191,7 +191,7 @@ func (r *mutationResolver) AddGroupToRoom(ctx context.Context, input model.Group
 func (r *mutationResolver) AddEditorsToRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	room, err := db.GetModRoom(DB, input.RoomID, user)
 	panicIf(err)
@@ -203,7 +203,7 @@ func (r *mutationResolver) AddEditorsToRoom(ctx context.Context, input model.Use
 func (r *mutationResolver) KickUsersFromRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	room, err := db.GetModRoom(DB, input.RoomID, user)
 	panicIf(err)
@@ -215,7 +215,7 @@ func (r *mutationResolver) KickUsersFromRoom(ctx context.Context, input model.Us
 func (r *mutationResolver) KickGroupsFromRoom(ctx context.Context, input model.GroupsToRoom) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	room, err := db.GetModRoom(DB, input.RoomID, user)
 	panicIf(err)
@@ -227,7 +227,7 @@ func (r *mutationResolver) KickGroupsFromRoom(ctx context.Context, input model.G
 func (r *mutationResolver) KickEditorsFromRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	room, err := db.GetModRoom(DB, input.RoomID, user)
 	panicIf(err)
@@ -239,7 +239,7 @@ func (r *mutationResolver) KickEditorsFromRoom(ctx context.Context, input model.
 func (r *mutationResolver) DeleteRoom(ctx context.Context, input string) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	group, err := db.GetModRoom(DB, input, user)
 	panicIf(err)
@@ -251,7 +251,7 @@ func (r *mutationResolver) DeleteRoom(ctx context.Context, input string) (string
 func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	err := user.Get(DB)
 	panicIf(err)
@@ -262,7 +262,7 @@ func (r *queryResolver) GetAuthUser(ctx context.Context) (*model.User, error) {
 
 func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	if us := auth.ForContext(ctx); us == nil {
-		panic("access denied")
+		panic("1")
 	}
 	var (
 		users    db.Users
@@ -278,7 +278,7 @@ func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) 
 
 func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.User, error) {
 	if us := auth.ForContext(ctx); us == nil {
-		panic("access denied")
+		panic("1")
 	}
 	var (
 		users        db.Users
@@ -308,7 +308,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.
 func (r *queryResolver) GetGroups(ctx context.Context, input model.InfoGroups) ([]*model.Group, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	if input.IsPrivate {
 		return getGroups(db.GetPrivateGroups(DB, input.GroupsID, user)), nil
@@ -319,7 +319,7 @@ func (r *queryResolver) GetGroups(ctx context.Context, input model.InfoGroups) (
 func (r *queryResolver) GetMyGroups(ctx context.Context) ([]*model.Group, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	return getGroups(db.GetMyGroups(DB, user)), nil
 }
@@ -327,7 +327,7 @@ func (r *queryResolver) GetMyGroups(ctx context.Context) ([]*model.Group, error)
 func (r *queryResolver) GetMyRooms(ctx context.Context) ([]*model.Room, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	return getRooms(db.GetMyRooms(DB, user)), nil
 }
@@ -335,7 +335,7 @@ func (r *queryResolver) GetMyRooms(ctx context.Context) ([]*model.Room, error) {
 func (r *queryResolver) GetRooms(ctx context.Context, input []string) ([]*model.Room, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
-		panic("access denied")
+		panic("1")
 	}
 	return getRooms(db.GetRooms(DB, input, user)), nil
 }
