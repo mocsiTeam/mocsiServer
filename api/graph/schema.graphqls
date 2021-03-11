@@ -84,29 +84,50 @@ input NewRoom {
 
 type Query {
   getAuthUser: User!
+
   getAllUsers: [User!]
+
   getUsers(input: [String!]): [User!]
+
   getGroups(input: InfoGroups!): [Group!]
+
   getMyGroups: [Group!]
+
   getMyRooms: [Room!]
+
   getRooms(input: [ID!]): [Room!]
 }
 
 type Mutation {
   createUser(input: NewUser!): Tokens!
+
   login(input: Login!): Tokens!
+
   refreshToken(input: RefreshTokenInput!): String!
+
   createGroup(input: NewGroup!): Group!
+
   addUsersToGroup(input: UsersToGroup!): String!
+
   addEditorsToGroup(input: UsersToGroup!): String!
+
   kickUsersFromGroup(input: UsersToGroup!): String!
+
   deleteGroup(input: ID!): String!
+
   createRoom(input: NewRoom!): Room!
+
   addUsersToRoom(input: UsersToRoom!): String!
+
   addGroupToRoom(input: GroupsToRoom!): String!
+
   addEditorsToRoom(input: UsersToRoom!): String!
+
   kickUsersFromRoom(input: UsersToRoom!): String!
+
   kickGroupsFromRoom(input: GroupsToRoom!): String!
+
   kickEditorsFromRoom(input: UsersToRoom!): String!
+
   deleteRoom(input: ID!): String!
 }
