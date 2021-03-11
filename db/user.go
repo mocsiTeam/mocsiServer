@@ -25,14 +25,12 @@ func (user *Users) Create(db *gorm.DB) error {
 	var err error
 	user.Pass, err = HashPassword(user.Pass)
 	if err != nil {
-		return err
+		return fmt.Errorf("0")
 	}
 	if err := db.Select("nickname").Where("nickname = ?", user.Nickname).First(&user).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
-		return &NameAlredyExists{}
+		return fmt.Errorf("11")
 	} else if err := db.Select("email").Where("email = ?", user.Email).First(&user).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
-		return &EmailAlredyExists{}
-	} else if err := db.Create(&user).Error; err != nil {
-		return err
+		return fmt.Errorf("12")
 	}
 	return nil
 }
@@ -69,7 +67,7 @@ func CheckPasswordHash(password, hash string) bool {
 
 func (user *Users) GetRefreshToken(db *gorm.DB, id string) (string, error) {
 	if err := db.Select("refresh_token", "nickname").Where("id = ?", id).First(&user).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-		return "", &UserNotFound{}
+		return "", fmt.Errorf("22")
 	}
 	return user.RefreshToken, nil
 }
