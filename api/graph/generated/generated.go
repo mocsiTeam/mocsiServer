@@ -46,7 +46,6 @@ type ComplexityRoot struct {
 	Group struct {
 		CountUsers func(childComplexity int) int
 		Editors    func(childComplexity int) int
-		Error      func(childComplexity int) int
 		ID         func(childComplexity int) int
 		Name       func(childComplexity int) int
 		Owner      func(childComplexity int) int
@@ -83,13 +82,13 @@ type ComplexityRoot struct {
 	}
 
 	Room struct {
-		Editors func(childComplexity int) int
-		Error   func(childComplexity int) int
-		ID      func(childComplexity int) int
-		Link    func(childComplexity int) int
-		Name    func(childComplexity int) int
-		Owner   func(childComplexity int) int
-		Users   func(childComplexity int) int
+		Editors    func(childComplexity int) int
+		ID         func(childComplexity int) int
+		Link       func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Owner      func(childComplexity int) int
+		UniqueName func(childComplexity int) int
+		Users      func(childComplexity int) int
 	}
 
 	Tokens struct {
@@ -165,13 +164,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Group.Editors(childComplexity), true
-
-	case "Group.error":
-		if e.complexity.Group.Error == nil {
-			break
-		}
-
-		return e.complexity.Group.Error(childComplexity), true
 
 	case "Group.id":
 		if e.complexity.Group.ID == nil {
@@ -464,13 +456,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Room.Editors(childComplexity), true
 
-	case "Room.error":
-		if e.complexity.Room.Error == nil {
-			break
-		}
-
-		return e.complexity.Room.Error(childComplexity), true
-
 	case "Room.id":
 		if e.complexity.Room.ID == nil {
 			break
@@ -498,6 +483,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Room.Owner(childComplexity), true
+
+	case "Room.unique_name":
+		if e.complexity.Room.UniqueName == nil {
+			break
+		}
+
+		return e.complexity.Room.UniqueName(childComplexity), true
 
 	case "Room.users":
 		if e.complexity.Room.Users == nil {
@@ -664,17 +656,16 @@ type Group {
   owner: User!
   editors: [User!]
   users: [User!]
-  error: String!
 }
 
 type Room {
   id: ID!
+  unique_name: String!
   name: String!
   link: String!
   owner: User!
   editors: [User!]
   users: [User!]
-  error: String!
 }
 
 input NewUser {
@@ -720,36 +711,58 @@ input InfoGroups {
 }
 
 input NewRoom {
+  unique_name: String!
   name: String!
   password: String!
 }
 
 type Query {
   getAuthUser: User!
+
   getAllUsers: [User!]
+
   getUsers(input: [String!]): [User!]
+
   getGroups(input: InfoGroups!): [Group!]
+
   getMyGroups: [Group!]
+
   getMyRooms: [Room!]
+
   getRooms(input: [ID!]): [Room!]
 }
 
 type Mutation {
   createUser(input: NewUser!): Tokens!
+
   login(input: Login!): Tokens!
+
   refreshToken(input: RefreshTokenInput!): String!
+
   createGroup(input: NewGroup!): Group!
+
   addUsersToGroup(input: UsersToGroup!): String!
+
   addEditorsToGroup(input: UsersToGroup!): String!
+
   kickUsersFromGroup(input: UsersToGroup!): String!
+
   deleteGroup(input: ID!): String!
+
   createRoom(input: NewRoom!): Room!
+
   addUsersToRoom(input: UsersToRoom!): String!
+
   addGroupToRoom(input: GroupsToRoom!): String!
+
   addEditorsToRoom(input: UsersToRoom!): String!
+
   kickUsersFromRoom(input: UsersToRoom!): String!
+
   kickGroupsFromRoom(input: GroupsToRoom!): String!
+
   kickEditorsFromRoom(input: UsersToRoom!): String!
+
   deleteRoom(input: ID!): String!
 }`, BuiltIn: false},
 }
@@ -1299,41 +1312,6 @@ func (ec *executionContext) _Group_users(ctx context.Context, field graphql.Coll
 	res := resTmp.([]*model.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Group_error(ctx context.Context, field graphql.CollectedField, obj *model.Group) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Group",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Error, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2362,6 +2340,41 @@ func (ec *executionContext) _Room_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Room_unique_name(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Room",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UniqueName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Room_name(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2529,41 +2542,6 @@ func (ec *executionContext) _Room_users(ctx context.Context, field graphql.Colle
 	res := resTmp.([]*model.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Room_error(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Room",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Error, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Tokens_accessToken(ctx context.Context, field graphql.CollectedField, obj *model.Tokens) (ret graphql.Marshaler) {
@@ -4121,6 +4099,14 @@ func (ec *executionContext) unmarshalInputNewRoom(ctx context.Context, obj inter
 
 	for k, v := range asMap {
 		switch k {
+		case "unique_name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unique_name"))
+			it.UniqueName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "name":
 			var err error
 
@@ -4314,11 +4300,6 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = ec._Group_editors(ctx, field, obj)
 		case "users":
 			out.Values[i] = ec._Group_users(ctx, field, obj)
-		case "error":
-			out.Values[i] = ec._Group_error(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4562,6 +4543,11 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "unique_name":
+			out.Values[i] = ec._Room_unique_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "name":
 			out.Values[i] = ec._Room_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4581,11 +4567,6 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Room_editors(ctx, field, obj)
 		case "users":
 			out.Values[i] = ec._Room_users(ctx, field, obj)
-		case "error":
-			out.Values[i] = ec._Room_error(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

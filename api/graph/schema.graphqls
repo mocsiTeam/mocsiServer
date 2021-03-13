@@ -22,17 +22,16 @@ type Group {
   owner: User!
   editors: [User!]
   users: [User!]
-  error: String!
 }
 
 type Room {
   id: ID!
+  unique_name: String!
   name: String!
   link: String!
   owner: User!
   editors: [User!]
   users: [User!]
-  error: String!
 }
 
 input NewUser {
@@ -78,6 +77,7 @@ input InfoGroups {
 }
 
 input NewRoom {
+  unique_name: String!
   name: String!
   password: String!
 }
