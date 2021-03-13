@@ -152,7 +152,7 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 	room := &db.Rooms{
 		Name:       input.Name,
 		UniqueName: input.UniqueName,
-		Link:       "https://" + hostname + "/" + input.Name,
+		Link:       "https://" + hostname + "/" + input.UniqueName,
 		Pass:       input.Password,
 	}
 	err := room.Create(DB, user)
