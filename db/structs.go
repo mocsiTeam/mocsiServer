@@ -28,6 +28,14 @@ type Rooms struct {
 	Timer      time.Time
 }
 
+type Events struct {
+	ID       uint `gorm:"primaryKey;"`
+	DateTime time.Time
+	Month    time.Month
+	Year     int
+	Room     Rooms `gorm:"foreignKey:RoomID; not null;"`
+}
+
 type AccessLevel struct {
 	ID   uint   `gorm:"primaryKey;"`
 	Name string `gorm:"unique; not null;"`

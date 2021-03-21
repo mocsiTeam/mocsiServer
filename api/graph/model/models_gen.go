@@ -26,6 +26,11 @@ type Login struct {
 	Password string `json:"password"`
 }
 
+type NewEvent struct {
+	IDRoom   string `json:"idRoom"`
+	Datetime string `json:"datetime"`
+}
+
 type NewGroup struct {
 	Name    string `json:"name"`
 	Private bool   `json:"private"`

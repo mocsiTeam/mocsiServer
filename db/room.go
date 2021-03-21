@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -22,7 +23,7 @@ func (room *Rooms) Create(db *gorm.DB, user *Users) error {
 	} else if err := user.Check(db); err != nil {
 		return &UserNotFound{}
 	} else if result := db.Create(&room); result.Error != nil {
-		return err
+		return result.Error
 	}
 	var roomAccess = &RoomAccess{
 		UserID:  user.ID,
@@ -33,6 +34,25 @@ func (room *Rooms) Create(db *gorm.DB, user *Users) error {
 		return err
 	}
 	return nil
+}
+
+func (event *Events) Create(db *gorm.DB) error {
+	if result := db.Create(&event); result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func GetEventsMonth(db *gorm.DB, datetime string) ([]Events, error) {
+	var events []Events
+	dt, err := time.Parse(time.RFC3339, datetime)
+	if err != nil {
+		return []Events{}, err
+	}
+	year := dt.Year()
+	month := dt.Month()
+	db.Joins("Room").Where("year = ? AND month = ?", year, month).Find(&events)
+	return events, nil
 }
 
 func (room *Rooms) AddUsers(db *gorm.DB, usersID []string, user *Users) error {
