@@ -2,12 +2,12 @@
 
 ## Create User
 
-creates a new user in mocsi with a unique nickname and email address. Also returns 2 tokens
+creates a new user in mocsi with a unique nickname and email address. Also returns 2 tokens.
 
 ### **Shemas**
 
 ```
-type NewUser {
+input NewUser {
     email: String!
     password: String!
     nickname: String!
@@ -50,8 +50,8 @@ Response
 {
   "data": {
     "createUser": {
-      "here.will.be.accessToken",
-      "here.will.be.refreshToken"
+      "accessToken":"here.will.be.accessToken",
+      "refreshToken":"here.will.be.refreshToken"
     }
   }
 }
@@ -60,7 +60,7 @@ Response
 
 ## User authorization
 
-checks if the user is in mocsi, if the entered data is correct, then returns two tokens
+checks if the user is in mocsi, if the entered data is correct, then returns two tokens.
 
 ### **Shemas**
 
@@ -103,8 +103,116 @@ Response
 {
   "data": {
     "login": {
-      "here.will.be.accessToken",
-      "here.will.be.refreshToken"
+      "accessToken":"here.will.be.accessToken",
+      "refreshToken":"here.will.be.refreshToken"
+    }
+  }
+}
+```
+
+## Refresh token
+
+Updates the access token.
+
+### **Mutations request**
+```
+input RefreshTokenInput{
+  token: String!
+}
+```
+
+```
+refreshToken(
+  input: RefreshTokenInput!
+): String!
+```
+
+### **Example**
+
+Request
+
+```
+mutation {
+    refreshToken(input: RefreshTokenInput!)
+}
+```
+
+Response
+
+```
+{
+  "data": {
+    "login": {
+      "here.will.be.accessToken"
+    }
+  }
+}
+```
+
+## Getting an authorized user
+
+Allows you to get information about the current user.
+
+For this request you will need to add a token to the HTTP headers.
+```
+  {
+    "token":"here.will.be.accessToken"
+  }
+```
+### **Shemas**
+
+```
+type User {
+  id: ID!
+  nickname: String!
+  firstname: String!
+  lastname: String!
+  email: String!
+  role: String!
+  groups: [String!]!
+  error: String!
+}
+```
+
+### **Query request**
+
+```
+getAuthUser: User!
+```
+
+### **Example**
+
+Request
+
+```
+query {
+  getAuthUser {
+ 	id
+    nickname
+    firstname
+    lastname
+    email
+    role
+    groups
+    error
+  }
+}
+```
+
+Response
+
+```
+{
+  "data": {
+    "getAuthUser": {
+      "id": "1",
+      "nickname": "p1ck0",
+      "firstname": "Kameha",
+      "lastname": "Meha",
+      "email": "p1ck0@github.com",
+      "role": "1",
+      "groups": [],
+      "error": ""
     }
   }
 }
@@ -112,7 +220,7 @@ Response
 
 ## Error response
 
-returned in case of error
+Returned in case of error.
 
 ```
 {
