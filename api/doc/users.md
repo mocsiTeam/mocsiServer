@@ -187,7 +187,7 @@ Request
 ```
 query {
   getAuthUser {
- 	id
+ id
     nickname
     firstname
     lastname
