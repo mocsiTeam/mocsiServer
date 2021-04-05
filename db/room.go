@@ -49,9 +49,8 @@ func GetEventsMonth(db *gorm.DB, datetime string) ([]Events, error) {
 	if err != nil {
 		return []Events{}, err
 	}
-	year := dt.Year()
-	month := dt.Month()
-	db.Joins("Room").Where("year = ? AND month = ?", year, month).Find(&events)
+	dt2 := dt.AddDate(0, 1, 0)
+	db.Joins("Room").Where("date_time between ? and ?", dt, dt2).Find(&events)
 	return events, nil
 }
 

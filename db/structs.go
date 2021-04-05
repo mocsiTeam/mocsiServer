@@ -31,8 +31,6 @@ type Rooms struct {
 type Events struct {
 	ID       uint `gorm:"primaryKey;"`
 	DateTime time.Time
-	Month    time.Month
-	Year     int
 	Room     Rooms `gorm:"foreignKey:RoomID; not null;"`
 }
 

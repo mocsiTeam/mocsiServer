@@ -171,11 +171,12 @@ func (r *mutationResolver) CreateEvent(ctx context.Context, input *model.NewEven
 		panic("1")
 	}
 	dt, _ := time.Parse(time.RFC3339, input.Datetime)
+	if dt.Before(time.Now()) {
+		panic("44")
+	}
 	room := db.GetRooms(DB, []string{input.IDRoom}, user)
 	event := &db.Events{
 		DateTime: dt,
-		Month:    dt.Month(),
-		Year:     dt.Year(),
 		Room:     *room[0],
 	}
 	err := event.Create(DB)
