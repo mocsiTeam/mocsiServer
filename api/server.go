@@ -1,72 +1,85 @@
-package main
+package api
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"strconv"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/go-chi/chi"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/gorilla/websocket"
+
 	"github.com/mocsiTeam/mocsiServer/api/graph"
 	"github.com/mocsiTeam/mocsiServer/api/graph/generated"
-	"github.com/mocsiTeam/mocsiServer/auth"
 	"github.com/mocsiTeam/mocsiServer/errs"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-const defaultPort = "8082"
-
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
-
-	router := chi.NewRouter()
-
-	router.Use(auth.Middleware())
-
+func NewGraphQLServer() *handler.Server {
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 	srv.SetRecoverFunc(func(ctx context.Context, e interface{}) error {
-		var code int
-		var err error
-		switch x := e.(type) {
-		case string:
-			code, err = strconv.Atoi(x)
-			if err != nil {
-				fmt.Println(err)
-				code = 0
-			}
-		case error:
-			code, err = strconv.Atoi(x.Error())
-			if err != nil {
-				fmt.Println(err)
-				code = 0
-			}
-		default:
-			code = 0
-		}
-		err = &gqlerror.Error{
-			Path:    graphql.GetPath(ctx),
-			Message: errs.CodeErr[uint(code)],
-			Extensions: map[string]interface{}{
-				"code":   code,
-				"status": false,
-			},
-		}
-
-		return err
-
+		return recoverFunc(ctx, e)
 	})
 
-	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	router.Handle("/query", srv)
+	srv.AddTransport(&transport.Websocket{
+		Upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		},
+		KeepAlivePingInterval: 10 * time.Second,
+	})
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+	srv.AddTransport(transport.MultipartForm{})
+
+	srv.SetQueryCache(lru.New(1000))
+
+	srv.Use(extension.Introspection{})
+	srv.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New(100),
+	})
+
+	return srv
+}
+
+func recoverFunc(ctx context.Context, e interface{}) error {
+	var code int
+	var err error
+	switch x := e.(type) {
+	case string:
+		code, err = strconv.Atoi(x)
+		if err != nil {
+			fmt.Println(err)
+			code = 0
+		}
+	case error:
+		code, err = strconv.Atoi(x.Error())
+		if err != nil {
+			fmt.Println(err)
+			code = 0
+		}
+	default:
+		code = 0
+	}
+	err = &gqlerror.Error{
+		Path:    graphql.GetPath(ctx),
+		Message: errs.CodeErr[uint(code)],
+		Extensions: map[string]interface{}{
+			"code":   code,
+			"status": false,
+		},
+	}
+
+	return err
+
 }
