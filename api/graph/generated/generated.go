@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -37,12 +38,17 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Event struct {
+		Message func(childComplexity int) int
+	}
+
 	Group struct {
 		CountUsers func(childComplexity int) int
 		Editors    func(childComplexity int) int
@@ -93,6 +99,10 @@ type ComplexityRoot struct {
 		Users      func(childComplexity int) int
 	}
 
+	Subscription struct {
+		Notification func(childComplexity int) int
+	}
+
 	Tokens struct {
 		AccessToken  func(childComplexity int) int
 		RefreshToken func(childComplexity int) int
@@ -139,6 +149,9 @@ type QueryResolver interface {
 	GetRooms(ctx context.Context, id []string) ([]*model.Room, error)
 	GetRoomsMonth(ctx context.Context, month string) ([]*model.Room, error)
 }
+type SubscriptionResolver interface {
+	Notification(ctx context.Context) (<-chan *model.Event, error)
+}
 
 type executableSchema struct {
 	resolvers  ResolverRoot
@@ -154,6 +167,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Event.message":
+		if e.complexity.Event.Message == nil {
+			break
+		}
+
+		return e.complexity.Event.Message(childComplexity), true
 
 	case "Group.countUsers":
 		if e.complexity.Group.CountUsers == nil {
@@ -526,6 +546,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Room.Users(childComplexity), true
 
+	case "Subscription.notification":
+		if e.complexity.Subscription.Notification == nil {
+			break
+		}
+
+		return e.complexity.Subscription.Notification(childComplexity), true
+
 	case "Tokens.accessToken":
 		if e.complexity.Tokens.AccessToken == nil {
 			break
@@ -634,6 +661,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				Data: buf.Bytes(),
 			}
 		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next()
+
+			if data == nil {
+				return nil
+			}
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
 
 	default:
 		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
@@ -694,6 +738,10 @@ type Room {
   owner: User!
   editors: [User!]
   users: [User!]
+}
+
+type Event {
+  message: String!
 }
 
 input NewUser {
@@ -801,6 +849,12 @@ type Mutation {
   kickEditorsFromRoom(input: UsersToRoom!): String!
 
   deleteRoom(id: ID!): String!
+}
+
+type Subscription {
+
+  notification: Event!
+
 }
 
 scalar DateTime`, BuiltIn: false},
@@ -1178,6 +1232,41 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Event_message(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _Group_id(ctx context.Context, field graphql.CollectedField, obj *model.Group) (ret graphql.Marshaler) {
 	defer func() {
@@ -2692,6 +2781,51 @@ func (ec *executionContext) _Room_users(ctx context.Context, field graphql.Colle
 	res := resTmp.([]*model.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Subscription_notification(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().Notification(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan *model.Event)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalNEvent2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐEvent(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
 }
 
 func (ec *executionContext) _Tokens_accessToken(ctx context.Context, field graphql.CollectedField, obj *model.Tokens) (ret graphql.Marshaler) {
@@ -4443,6 +4577,33 @@ func (ec *executionContext) unmarshalInputUsersToRoom(ctx context.Context, obj i
 
 // region    **************************** object.gotpl ****************************
 
+var eventImplementors = []string{"Event"}
+
+func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, obj *model.Event) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Event")
+		case "message":
+			out.Values[i] = ec._Event_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var groupImplementors = []string{"Group"}
 
 func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, obj *model.Group) graphql.Marshaler {
@@ -4770,6 +4931,26 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 		return graphql.Null
 	}
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func() graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "notification":
+		return ec._Subscription_notification(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var tokensImplementors = []string{"Tokens"}
@@ -5139,6 +5320,20 @@ func (ec *executionContext) marshalNDateTime2string(ctx context.Context, sel ast
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNEvent2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v model.Event) graphql.Marshaler {
+	return ec._Event(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v *model.Event) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Event(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNGroup2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐGroup(ctx context.Context, sel ast.SelectionSet, v model.Group) graphql.Marshaler {

@@ -34,6 +34,10 @@ type Room {
   users: [User!]
 }
 
+type Event {
+  message: String!
+}
+
 input NewUser {
   email: String!
   password: String!
@@ -139,6 +143,12 @@ type Mutation {
   kickEditorsFromRoom(input: UsersToRoom!): String!
 
   deleteRoom(id: ID!): String!
+}
+
+type Subscription {
+
+  notification: Event!
+
 }
 
 scalar DateTime
