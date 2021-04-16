@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -194,6 +193,16 @@ func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input model.Users
 	panicIf(err)
 	err = room.AddUsers(DB, input.UsersID, user)
 	panicIf(err)
+	modroom := &model.Room{
+		ID: strconv.Itoa(int(room.ID)), Name: room.Name, Link: room.Link,
+	}
+	r.Lock()
+	for _, id := range input.UsersID {
+		go func(id string) {
+			r.newUsersRoom[id] <- modroom
+		}(id)
+	}
+	r.Unlock()
 	return "users_added", nil
 }
 
@@ -374,8 +383,21 @@ func (r *queryResolver) GetRoomsMonth(ctx context.Context, month string) ([]*mod
 	return getRooms(rooms), nil
 }
 
-func (r *subscriptionResolver) Notification(ctx context.Context) (<-chan *model.Event, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *subscriptionResolver) AddedUsersToRoom(ctx context.Context, id string) (<-chan *model.Room, error) {
+	event := make(chan *model.Room, 1)
+
+	go func() {
+		<-ctx.Done()
+		r.Lock()
+		delete(r.newUsersRoom, id)
+		r.Unlock()
+	}()
+
+	r.Lock()
+	r.newUsersRoom[id] = event
+	r.Unlock()
+
+	return event, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

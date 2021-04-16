@@ -100,7 +100,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		Notification func(childComplexity int) int
+		AddedUsersToRoom func(childComplexity int, id string) int
 	}
 
 	Tokens struct {
@@ -150,7 +150,7 @@ type QueryResolver interface {
 	GetRoomsMonth(ctx context.Context, month string) ([]*model.Room, error)
 }
 type SubscriptionResolver interface {
-	Notification(ctx context.Context) (<-chan *model.Event, error)
+	AddedUsersToRoom(ctx context.Context, id string) (<-chan *model.Room, error)
 }
 
 type executableSchema struct {
@@ -546,12 +546,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Room.Users(childComplexity), true
 
-	case "Subscription.notification":
-		if e.complexity.Subscription.Notification == nil {
+	case "Subscription.addedUsersToRoom":
+		if e.complexity.Subscription.AddedUsersToRoom == nil {
 			break
 		}
 
-		return e.complexity.Subscription.Notification(childComplexity), true
+		args, err := ec.field_Subscription_addedUsersToRoom_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.AddedUsersToRoom(childComplexity, args["id"].(string)), true
 
 	case "Tokens.accessToken":
 		if e.complexity.Tokens.AccessToken == nil {
@@ -853,7 +858,7 @@ type Mutation {
 
 type Subscription {
 
-  notification: Event!
+  addedUsersToRoom(id: ID!): Room!
 
 }
 
@@ -1192,6 +1197,21 @@ func (ec *executionContext) field_Query_getUsers_args(ctx context.Context, rawAr
 		}
 	}
 	args["nicknames"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_addedUsersToRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -2783,7 +2803,7 @@ func (ec *executionContext) _Room_users(ctx context.Context, field graphql.Colle
 	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Subscription_notification(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+func (ec *executionContext) _Subscription_addedUsersToRoom(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2799,9 +2819,16 @@ func (ec *executionContext) _Subscription_notification(ctx context.Context, fiel
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Subscription_addedUsersToRoom_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().Notification(rctx)
+		return ec.resolvers.Subscription().AddedUsersToRoom(rctx, args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2814,7 +2841,7 @@ func (ec *executionContext) _Subscription_notification(ctx context.Context, fiel
 		return nil
 	}
 	return func() graphql.Marshaler {
-		res, ok := <-resTmp.(<-chan *model.Event)
+		res, ok := <-resTmp.(<-chan *model.Room)
 		if !ok {
 			return nil
 		}
@@ -2822,7 +2849,7 @@ func (ec *executionContext) _Subscription_notification(ctx context.Context, fiel
 			w.Write([]byte{'{'})
 			graphql.MarshalString(field.Alias).MarshalGQL(w)
 			w.Write([]byte{':'})
-			ec.marshalNEvent2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐEvent(ctx, field.Selections, res).MarshalGQL(w)
+			ec.marshalNRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐRoom(ctx, field.Selections, res).MarshalGQL(w)
 			w.Write([]byte{'}'})
 		})
 	}
@@ -4946,8 +4973,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	}
 
 	switch fields[0].Name {
-	case "notification":
-		return ec._Subscription_notification(ctx, fields[0])
+	case "addedUsersToRoom":
+		return ec._Subscription_addedUsersToRoom(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -5320,20 +5347,6 @@ func (ec *executionContext) marshalNDateTime2string(ctx context.Context, sel ast
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) marshalNEvent2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v model.Event) graphql.Marshaler {
-	return ec._Event(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v *model.Event) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._Event(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNGroup2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐGroup(ctx context.Context, sel ast.SelectionSet, v model.Group) graphql.Marshaler {

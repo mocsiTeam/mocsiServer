@@ -21,7 +21,9 @@ import (
 )
 
 func NewGraphQLServer() *handler.Server {
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	var resolver graph.Resolver
+	resolver.InitResolver()
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &resolver}))
 	srv.SetRecoverFunc(func(ctx context.Context, e interface{}) error {
 		return recoverFunc(ctx, e)
 	})

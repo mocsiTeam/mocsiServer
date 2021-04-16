@@ -147,7 +147,7 @@ type Mutation {
 
 type Subscription {
 
-  notification: Event!
+  addedUsersToRoom(id: ID!): Room!
 
 }
 
