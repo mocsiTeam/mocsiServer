@@ -4,6 +4,10 @@
 
 `0` - unknown error
 
+### Access erros
+
+`1` - access denied
+
 ### Registration errors
 
 `11` - name alredy exists
