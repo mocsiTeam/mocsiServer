@@ -1,8 +1,8 @@
-# methods for working users
+# Methods for working with users
 
 ## Create User
 
-creates a new user in mocsi with a unique nickname and email address. Also returns 2 tokens.
+Creates a new user in Mocsi with unique nickname and email address. Also returns 2 tokens.
 
 ### **Shemas**
 
@@ -60,7 +60,7 @@ Response
 
 ## User authorization
 
-checks if the user is in mocsi, if the entered data is correct, then returns two tokens.
+Checks if the user is registered in Mocsi. If provided data is correct, returns two tokens.
 
 ### **Shemas**
 
