@@ -149,6 +149,8 @@ type Subscription {
 
   addedUsersToRoom(id: ID!): Room!
 
+  kickedUsersFromRoom(id: ID!): Room!
+
 }
 
 scalar DateTime

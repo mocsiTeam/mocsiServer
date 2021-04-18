@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var userCtxKey = &contextKey{"user"}
+var UserCtxKey = &contextKey{"user"}
 
 type contextKey struct {
 	name string
@@ -44,7 +44,7 @@ func Middleware() func(http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-			ctx := context.WithValue(r.Context(), userCtxKey, &user)
+			ctx := context.WithValue(r.Context(), UserCtxKey, &user)
 
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
@@ -53,6 +53,6 @@ func Middleware() func(http.Handler) http.Handler {
 }
 
 func ForContext(ctx context.Context) *db.Users {
-	raw, _ := ctx.Value(userCtxKey).(*db.Users)
+	raw, _ := ctx.Value(UserCtxKey).(*db.Users)
 	return raw
 }

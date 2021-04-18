@@ -43,8 +43,8 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.Tokens, error) {
 	var user = db.Users{
-		Nickname: input.Email,
-		Pass:     input.Password,
+		Email: input.Email,
+		Pass:  input.Password,
 	}
 	if correct := user.Authenticate(DB); !correct {
 		panic("21")
@@ -196,7 +196,7 @@ func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input model.Users
 	r.Lock()
 	for _, id := range input.UsersID {
 		go func(id string) {
-			r.newUsersRoom[id] <- getRooms([]*db.Rooms{room})[0]
+			r.newUserRoom[id] <- getRooms([]*db.Rooms{room})[0]
 		}(id)
 	}
 	r.Unlock()
@@ -236,6 +236,13 @@ func (r *mutationResolver) KickUsersFromRoom(ctx context.Context, input model.Us
 	panicIf(err)
 	err = room.KickUsers(DB, input.UsersID, user)
 	panicIf(err)
+	r.Lock()
+	for _, id := range input.UsersID {
+		go func(id string) {
+			r.kickUserRoom[id] <- getRooms([]*db.Rooms{room})[0]
+		}(id)
+	}
+	r.Unlock()
 	return "users_kicked", nil
 }
 
@@ -386,12 +393,29 @@ func (r *subscriptionResolver) AddedUsersToRoom(ctx context.Context, id string) 
 	go func() {
 		<-ctx.Done()
 		r.Lock()
-		delete(r.newUsersRoom, id)
+		delete(r.newUserRoom, id)
 		r.Unlock()
 	}()
 
 	r.Lock()
-	r.newUsersRoom[id] = event
+	r.newUserRoom[id] = event
+	r.Unlock()
+
+	return event, nil
+}
+
+func (r *subscriptionResolver) KickedUsersFromRoom(ctx context.Context, id string) (<-chan *model.Room, error) {
+	event := make(chan *model.Room, 1)
+
+	go func() {
+		<-ctx.Done()
+		r.Lock()
+		delete(r.kickUserRoom, id)
+		r.Unlock()
+	}()
+
+	r.Lock()
+	r.kickUserRoom[id] = event
 	r.Unlock()
 
 	return event, nil

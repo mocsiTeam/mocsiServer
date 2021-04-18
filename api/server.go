@@ -13,9 +13,13 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/gorilla/websocket"
+	"gorm.io/gorm"
 
 	"github.com/mocsiTeam/mocsiServer/api/graph"
 	"github.com/mocsiTeam/mocsiServer/api/graph/generated"
+	"github.com/mocsiTeam/mocsiServer/auth"
+	"github.com/mocsiTeam/mocsiServer/auth/jwt"
+	"github.com/mocsiTeam/mocsiServer/db"
 	"github.com/mocsiTeam/mocsiServer/errs"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -35,6 +39,22 @@ func NewGraphQLServer() *handler.Server {
 			},
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
+		},
+		InitFunc: func(ctx context.Context, initPayload transport.InitPayload) (context.Context, error) {
+			var (
+				id  string
+				err error
+			)
+			id, err = jwt.ParseToken(initPayload.GetString("token"))
+			if err != nil {
+				panic(0)
+			}
+			userID, _ := strconv.Atoi(id)
+			user := db.Users{Model: gorm.Model{ID: uint(userID)}}
+			if user.Check(db.Connector()) != nil {
+				panic(1)
+			}
+			return context.WithValue(ctx, *auth.UserCtxKey, &user), nil
 		},
 		KeepAlivePingInterval: 10 * time.Second,
 	})

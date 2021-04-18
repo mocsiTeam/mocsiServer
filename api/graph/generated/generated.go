@@ -100,7 +100,8 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		AddedUsersToRoom func(childComplexity int, id string) int
+		AddedUsersToRoom    func(childComplexity int, id string) int
+		KickedUsersFromRoom func(childComplexity int, id string) int
 	}
 
 	Tokens struct {
@@ -151,6 +152,7 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	AddedUsersToRoom(ctx context.Context, id string) (<-chan *model.Room, error)
+	KickedUsersFromRoom(ctx context.Context, id string) (<-chan *model.Room, error)
 }
 
 type executableSchema struct {
@@ -558,6 +560,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Subscription.AddedUsersToRoom(childComplexity, args["id"].(string)), true
 
+	case "Subscription.kickedUsersFromRoom":
+		if e.complexity.Subscription.KickedUsersFromRoom == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_kickedUsersFromRoom_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.KickedUsersFromRoom(childComplexity, args["id"].(string)), true
+
 	case "Tokens.accessToken":
 		if e.complexity.Tokens.AccessToken == nil {
 			break
@@ -859,6 +873,8 @@ type Mutation {
 type Subscription {
 
   addedUsersToRoom(id: ID!): Room!
+
+  kickedUsersFromRoom(id: ID!): Room!
 
 }
 
@@ -1201,6 +1217,21 @@ func (ec *executionContext) field_Query_getUsers_args(ctx context.Context, rawAr
 }
 
 func (ec *executionContext) field_Subscription_addedUsersToRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_kickedUsersFromRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -2829,6 +2860,58 @@ func (ec *executionContext) _Subscription_addedUsersToRoom(ctx context.Context, 
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Subscription().AddedUsersToRoom(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan *model.Room)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalNRoom2ᚖgithubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐRoom(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
+}
+
+func (ec *executionContext) _Subscription_kickedUsersFromRoom(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Subscription_kickedUsersFromRoom_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().KickedUsersFromRoom(rctx, args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4975,6 +5058,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "addedUsersToRoom":
 		return ec._Subscription_addedUsersToRoom(ctx, fields[0])
+	case "kickedUsersFromRoom":
+		return ec._Subscription_kickedUsersFromRoom(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
