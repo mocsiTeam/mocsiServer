@@ -72,33 +72,9 @@ func (user *Users) GetRefreshToken(db *gorm.DB, id string) (string, error) {
 	return user.RefreshToken, nil
 }
 
-type WrongUsernameOrPasswordError struct{}
-
-func (m *WrongUsernameOrPasswordError) Error() string {
-	return "wrong username or password"
-}
-
-type NameAlredyExists struct{}
-
-func (m *NameAlredyExists) Error() string {
-	return "name alredy exists"
-}
-
-type EmailAlredyExists struct{}
-
-func (m *EmailAlredyExists) Error() string {
-	return "email alredy exists"
-}
-
-type UserNotFound struct{}
-
-func (m *UserNotFound) Error() string {
-	return "user not found"
-}
-
 func (user *Users) Get(db *gorm.DB) error {
 	if err := db.Where("nickname = ?", user.Nickname).First(&user).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+		return fmt.Errorf("22")
 	}
 	return nil
 }
