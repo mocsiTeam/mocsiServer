@@ -43,7 +43,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.Tokens, error) {
 	var user = db.Users{
-		Nickname: input.Nickname,
+		Nickname: input.Email,
 		Pass:     input.Password,
 	}
 	if correct := user.Authenticate(DB); !correct {
@@ -151,10 +151,10 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 	}
 	hostname, _ := os.Hostname()
 	room := &db.Rooms{
-		Name:       input.Name,
-		UniqueName: input.UniqueName,
-		Link:       hostname + "/" + input.UniqueName,
-		Pass:       input.Password,
+		Name: input.Name,
+		//UniqueName: input.UniqueName,
+		Link: hostname + "/" + input.Name,
+		Pass: input.Password,
 	}
 	err := room.Create(DB, user)
 	panicIf(err)
@@ -193,13 +193,10 @@ func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input model.Users
 	panicIf(err)
 	err = room.AddUsers(DB, input.UsersID, user)
 	panicIf(err)
-	modroom := &model.Room{
-		ID: strconv.Itoa(int(room.ID)), Name: room.Name, Link: room.Link,
-	}
 	r.Lock()
 	for _, id := range input.UsersID {
 		go func(id string) {
-			r.newUsersRoom[id] <- modroom
+			r.newUsersRoom[id] <- getRooms([]*db.Rooms{room})[0]
 		}(id)
 	}
 	r.Unlock()
@@ -440,7 +437,9 @@ func getRooms(rooms []*db.Rooms) []*model.Room {
 		gettingRooms = append(gettingRooms, &model.Room{
 			ID: strconv.Itoa(int(room.ID)), Name: room.Name, Link: room.Link,
 			Owner: &model.User{ID: strconv.Itoa(int(pack.owner.ID)),
-				Nickname: pack.owner.Nickname, Email: pack.owner.Email},
+				Nickname:  pack.owner.Nickname,
+				Firstname: pack.owner.Firstname, Lastname: pack.owner.Lastname,
+				Email: pack.owner.Email, Role: strconv.Itoa(int(pack.owner.RoleID))},
 			Users: pack.modelUsers, Editors: pack.modelUsers})
 	}
 	return gettingRooms
@@ -457,12 +456,12 @@ type pocket struct {
 func packagingOfUsers(src interface{}) pocket {
 	var pack pocket
 	switch v := src.(type) {
-	case db.Rooms:
+	case *db.Rooms:
 		room := v
 		pack.owner = room.GetOwner(DB)
 		pack.editors = room.GetEditors(DB)
 		pack.users = room.GetUsers(DB)
-	case db.Groups:
+	case *db.Groups:
 		group := v
 		pack.owner = group.GetOwner(DB)
 		pack.editors = group.GetEditors(DB)
@@ -475,7 +474,9 @@ func packagingOfUsers(src interface{}) pocket {
 			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
 	}
 	pack.modelEditors = append(pack.modelEditors, &model.User{ID: strconv.Itoa(int(pack.owner.ID)),
-		Nickname: pack.owner.Nickname, Email: pack.owner.Email})
+		Nickname:  pack.owner.Nickname,
+		Firstname: pack.owner.Firstname, Lastname: pack.owner.Lastname,
+		Email: pack.owner.Email, Role: strconv.Itoa(int(pack.owner.RoleID))})
 	for _, editor := range pack.editors {
 		pack.modelEditors = append(pack.modelEditors, &model.User{ID: strconv.Itoa(int(editor.ID)),
 			Nickname:  editor.Nickname,

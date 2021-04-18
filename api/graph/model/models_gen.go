@@ -26,7 +26,7 @@ type InfoGroups struct {
 }
 
 type Login struct {
-	Nickname string `json:"nickname"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 

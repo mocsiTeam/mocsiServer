@@ -53,7 +53,7 @@ func (user *Users) Check(db *gorm.DB) error {
 
 func (user *Users) Authenticate(db *gorm.DB) bool {
 	pass := user.Pass
-	if result := db.Where("nickname = ?", user.Nickname).First(&user); result.Error != nil {
+	if result := db.Where("email = ?", user.Email).First(&user); result.Error != nil {
 		log.Println(result.Error)
 		return false
 	}

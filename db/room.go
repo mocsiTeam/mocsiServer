@@ -59,7 +59,7 @@ func (room *Rooms) AddUsers(db *gorm.DB, usersID []string, user *Users) error {
 		return err
 	}
 	for _, id := range usersID {
-		if err := db.Exec("SELECT * FROM room_accesses WHERE room_id = ? AND level_id = ? AND user_id = ?", room.ID, 3, id).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		if err := db.Where("room_id = ? AND level_id = ? AND user_id = ?", room.ID, 3, id).First(&RoomAccess{}).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 			userID, _ := strconv.Atoi(id)
 			roomAccess := &RoomAccess{
 				UserID:  uint(userID),
@@ -67,6 +67,7 @@ func (room *Rooms) AddUsers(db *gorm.DB, usersID []string, user *Users) error {
 				LevelID: 3,
 			}
 			db.Create(&roomAccess)
+			db.Save(&room)
 		}
 	}
 	return nil
@@ -160,7 +161,8 @@ func GetMyRooms(db *gorm.DB, user *Users) []*Rooms {
 	var qr qroom
 	db.Joins("Room").Where("user_id = ?", user.ID).Find(&qr.accesses)
 	for _, room := range qr.accesses {
-		qr.rooms = append(qr.rooms, &room.Room)
+		tmp := room.Room
+		qr.rooms = append(qr.rooms, &tmp)
 	}
 	return qr.rooms
 }
@@ -176,9 +178,10 @@ func GetRooms(db *gorm.DB, id []string, user *Users) []*Rooms {
 
 func (room *Rooms) GetUsers(db *gorm.DB) []*Users {
 	var qr qroom
-	db.Joins("User").Where("room_id = ?", room.ID).Find(&qr.access)
+	db.Joins("User").Where("room_id = ?", room.ID).Find(&qr.accesses)
 	for _, user := range qr.accesses {
-		qr.users = append(qr.users, &user.User)
+		tmp := user.User
+		qr.users = append(qr.users, &tmp)
 	}
 	return qr.users
 }

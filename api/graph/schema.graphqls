@@ -51,7 +51,7 @@ input RefreshTokenInput{
 }
 
 input Login {
-  nickname: String!
+  email: String!
   password: String!
 }
 
