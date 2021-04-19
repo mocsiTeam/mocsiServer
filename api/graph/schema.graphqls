@@ -46,10 +46,6 @@ input NewUser {
   lastname: String!
 }
 
-input RefreshTokenInput{
-  token: String!
-}
-
 input Login {
   email: String!
   password: String!
@@ -114,7 +110,7 @@ type Mutation {
 
   login(input: Login!): Tokens!
 
-  refreshToken(token: RefreshTokenInput!): String!
+  refreshToken(token: String!): String!
 
   createGroup(input: NewGroup!): Group!
 

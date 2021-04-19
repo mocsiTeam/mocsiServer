@@ -63,15 +63,15 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model
 	return &model.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
-func (r *mutationResolver) RefreshToken(ctx context.Context, token model.RefreshTokenInput) (string, error) {
+func (r *mutationResolver) RefreshToken(ctx context.Context, token string) (string, error) {
 	var user db.Users
-	userID, err := jwt.ParseToken(token.Token)
+	userID, err := jwt.ParseToken(token)
 	if err != nil {
 		panic("0")
 	}
 	refreshToken, err := user.GetRefreshToken(DB, userID)
 	panicIf(err)
-	if refreshToken != token.Token {
+	if refreshToken != token {
 		panic("23")
 	}
 	atoken, err := jwt.GenerateAccessToken(user.Nickname, userID)
@@ -151,10 +151,10 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 	}
 	hostname, _ := os.Hostname()
 	room := &db.Rooms{
-		Name: input.Name,
-		//UniqueName: input.UniqueName,
-		Link: hostname + "/" + input.Name,
-		Pass: input.Password,
+		Name:       input.Name,
+		UniqueName: input.UniqueName,
+		Link:       hostname + "/" + input.Name,
+		Pass:       input.Password,
 	}
 	err := room.Create(DB, user)
 	panicIf(err)

@@ -21,11 +21,11 @@ type Groups struct {
 type Rooms struct {
 	gorm.Model
 	//CountUsers uint
-	//UniqueName string `gorm:"unique; not null;"`
-	Name  string `gorm:"not null;"`
-	Link  string `gorm:"unique; not null;"`
-	Pass  string
-	Timer time.Time
+	UniqueName string `gorm:"unique; not null;"`
+	Name       string `gorm:"not null;"`
+	Link       string `gorm:"unique; not null;"`
+	Pass       string
+	Timer      time.Time
 }
 
 type Events struct {

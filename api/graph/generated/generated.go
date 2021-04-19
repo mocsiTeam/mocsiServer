@@ -75,7 +75,7 @@ type ComplexityRoot struct {
 		KickUsersFromGroup  func(childComplexity int, input model.UsersToGroup) int
 		KickUsersFromRoom   func(childComplexity int, input model.UsersToRoom) int
 		Login               func(childComplexity int, input model.Login) int
-		RefreshToken        func(childComplexity int, token model.RefreshTokenInput) int
+		RefreshToken        func(childComplexity int, token string) int
 	}
 
 	Query struct {
@@ -124,7 +124,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.NewUser) (*model.Tokens, error)
 	Login(ctx context.Context, input model.Login) (*model.Tokens, error)
-	RefreshToken(ctx context.Context, token model.RefreshTokenInput) (string, error)
+	RefreshToken(ctx context.Context, token string) (string, error)
 	CreateGroup(ctx context.Context, input model.NewGroup) (*model.Group, error)
 	AddUsersToGroup(ctx context.Context, input model.UsersToGroup) (string, error)
 	AddEditorsToGroup(ctx context.Context, input model.UsersToGroup) (string, error)
@@ -421,7 +421,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RefreshToken(childComplexity, args["token"].(model.RefreshTokenInput)), true
+		return e.complexity.Mutation.RefreshToken(childComplexity, args["token"].(string)), true
 
 	case "Query.getAllUsers":
 		if e.complexity.Query.GetAllUsers == nil {
@@ -771,10 +771,6 @@ input NewUser {
   lastname: String!
 }
 
-input RefreshTokenInput{
-  token: String!
-}
-
 input Login {
   email: String!
   password: String!
@@ -839,7 +835,7 @@ type Mutation {
 
   login(input: Login!): Tokens!
 
-  refreshToken(token: RefreshTokenInput!): String!
+  refreshToken(token: String!): String!
 
   createGroup(input: NewGroup!): Group!
 
@@ -1129,10 +1125,10 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 func (ec *executionContext) field_Mutation_refreshToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.RefreshTokenInput
+	var arg0 string
 	if tmp, ok := rawArgs["token"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
-		arg0, err = ec.unmarshalNRefreshTokenInput2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐRefreshTokenInput(ctx, tmp)
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1632,7 +1628,7 @@ func (ec *executionContext) _Mutation_refreshToken(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RefreshToken(rctx, args["token"].(model.RefreshTokenInput))
+		return ec.resolvers.Mutation().RefreshToken(rctx, args["token"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4603,26 +4599,6 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputRefreshTokenInput(ctx context.Context, obj interface{}) (model.RefreshTokenInput, error) {
-	var it model.RefreshTokenInput
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "token":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
-			it.Token, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputUsersToGroup(ctx context.Context, obj interface{}) (model.UsersToGroup, error) {
 	var it model.UsersToGroup
 	var asMap = obj.(map[string]interface{})
@@ -5505,11 +5481,6 @@ func (ec *executionContext) unmarshalNNewRoom2githubᚗcomᚋmocsiTeamᚋmocsiSe
 
 func (ec *executionContext) unmarshalNNewUser2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐNewUser(ctx context.Context, v interface{}) (model.NewUser, error) {
 	res, err := ec.unmarshalInputNewUser(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNRefreshTokenInput2githubᚗcomᚋmocsiTeamᚋmocsiServerᚋapiᚋgraphᚋmodelᚐRefreshTokenInput(ctx context.Context, v interface{}) (model.RefreshTokenInput, error) {
-	res, err := ec.unmarshalInputRefreshTokenInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

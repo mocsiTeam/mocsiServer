@@ -16,7 +16,7 @@ func GenerateAccessToken(nickname, user_id string) (string, error) {
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_id"] = user_id
 	claims["nickname"] = nickname
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	claims["exp"] = time.Now().Add(time.Second * 60).Unix()
 	tokenString, err := token.SignedString(SecretKey)
 	if err != nil {
 		log.Fatal("Error in Generating key")

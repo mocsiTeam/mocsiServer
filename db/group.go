@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"gorm.io/gorm"
@@ -19,9 +20,9 @@ type qgroup struct {
 func (group *Groups) Create(db *gorm.DB, user *Users) error {
 	group.CountUsers = 1
 	if err := db.Select("name").Where("name = ?", group.Name).First(&group).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
-		return &NameAlredyExists{}
+		return fmt.Errorf("0")
 	} else if err := user.Check(db); err != nil {
-		return &UserNotFound{}
+		return fmt.Errorf("0")
 	} else if result := db.Create(&group); result.Error != nil {
 		return err
 	}
@@ -164,7 +165,7 @@ func (group *Groups) DeleteGroup(db *gorm.DB, user *Users) error {
 func (group *Groups) checkOwner(db *gorm.DB, user *Users) error {
 	var qg qgroup
 	if err := user.Check(db); err != nil {
-		return &UserNotFound{}
+		return fmt.Errorf("0")
 	} else if err := db.Where("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 1, user.ID).First(&qg.groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("not_owner")
 	}
@@ -174,7 +175,7 @@ func (group *Groups) checkOwner(db *gorm.DB, user *Users) error {
 func (group *Groups) checkOwnerOrEditor(db *gorm.DB, user *Users) error {
 	var qg qgroup
 	if err := user.Check(db); err != nil {
-		return &UserNotFound{}
+		return fmt.Errorf("0")
 	} else if err := db.Where("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 1, user.ID).Or("group_id = ? AND level_id = ? AND user_id = ?", group.ID, 2, user.ID).First(&qg.groupAccess).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("not_owner_or_editor")
 	}

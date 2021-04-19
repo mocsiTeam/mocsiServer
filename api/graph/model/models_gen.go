@@ -54,10 +54,6 @@ type NewUser struct {
 	Lastname  string `json:"lastname"`
 }
 
-type RefreshTokenInput struct {
-	Token string `json:"token"`
-}
-
 type Room struct {
 	ID         string  `json:"id"`
 	UniqueName string  `json:"unique_name"`
