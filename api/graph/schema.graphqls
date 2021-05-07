@@ -82,12 +82,17 @@ input NewRoom {
   password: String!
 }
 
+input NewEvent {
+  idRoom: ID!
+  datetime: DateTime!
+}
+
 type Query {
   getAuthUser: User!
 
   getAllUsers: [User!]
 
-  getUsers(input: [String!]): [User!]
+  getUsers(nicknames: [String!]): [User!]
 
   getGroups(input: InfoGroups!): [Group!]
 
@@ -95,7 +100,9 @@ type Query {
 
   getMyRooms: [Room!]
 
-  getRooms(input: [ID!]): [Room!]
+  getRooms(id: [ID!]): [Room!]
+
+  getRoomsMonth(month: DateTime!): [Room!]
 }
 
 type Mutation {
@@ -103,7 +110,7 @@ type Mutation {
 
   login(input: Login!): Tokens!
 
-  refreshToken(input: RefreshTokenInput!): String!
+  refreshToken(token: RefreshTokenInput!): String!
 
   createGroup(input: NewGroup!): Group!
 
@@ -113,9 +120,11 @@ type Mutation {
 
   kickUsersFromGroup(input: UsersToGroup!): String!
 
-  deleteGroup(input: ID!): String!
+  deleteGroup(id: ID!): String!
 
   createRoom(input: NewRoom!): Room!
+
+  createEvent(input: NewEvent): String! 
 
   addUsersToRoom(input: UsersToRoom!): String!
 
@@ -129,5 +138,7 @@ type Mutation {
 
   kickEditorsFromRoom(input: UsersToRoom!): String!
 
-  deleteRoom(input: ID!): String!
+  deleteRoom(id: ID!): String!
 }
+
+scalar DateTime

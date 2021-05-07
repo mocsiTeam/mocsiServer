@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/mocsiTeam/mocsiServer/api/graph/generated"
 	"github.com/mocsiTeam/mocsiServer/api/graph/model"
@@ -62,22 +63,22 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model
 	return &model.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
-func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
+func (r *mutationResolver) RefreshToken(ctx context.Context, token model.RefreshTokenInput) (string, error) {
 	var user db.Users
-	userID, err := jwt.ParseToken(input.Token)
+	userID, err := jwt.ParseToken(token.Token)
 	if err != nil {
 		panic("0")
 	}
 	refreshToken, err := user.GetRefreshToken(DB, userID)
 	panicIf(err)
-	if refreshToken != input.Token {
+	if refreshToken != token.Token {
 		panic("23")
 	}
-	token, err := jwt.GenerateAccessToken(user.Nickname, userID)
+	atoken, err := jwt.GenerateAccessToken(user.Nickname, userID)
 	if err != nil {
 		panic("0")
 	}
-	return token, nil
+	return atoken, nil
 }
 
 func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup) (*model.Group, error) {
@@ -131,12 +132,12 @@ func (r *mutationResolver) KickUsersFromGroup(ctx context.Context, input model.U
 	return "users_kicked", nil
 }
 
-func (r *mutationResolver) DeleteGroup(ctx context.Context, input string) (string, error) {
+func (r *mutationResolver) DeleteGroup(ctx context.Context, id string) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
 		panic("1")
 	}
-	group, err := db.GetModGroup(DB, input, user)
+	group, err := db.GetModGroup(DB, id, user)
 	panicIf(err)
 	err = group.DeleteGroup(DB, user)
 	panicIf(err)
@@ -152,7 +153,7 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 	room := &db.Rooms{
 		Name:       input.Name,
 		UniqueName: input.UniqueName,
-		Link:       "https://" + hostname + "/" + input.UniqueName,
+		Link:       hostname + "/" + input.UniqueName,
 		Pass:       input.Password,
 	}
 	err := room.Create(DB, user)
@@ -162,6 +163,25 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 		Email: user.Email, Role: strconv.Itoa(int(user.RoleID))}
 	return &model.Room{ID: strconv.Itoa(int(room.ID)), Name: room.Name,
 		Link: room.Link, Owner: owner, Users: []*model.User{owner}, Editors: []*model.User{owner}}, nil
+}
+
+func (r *mutationResolver) CreateEvent(ctx context.Context, input *model.NewEvent) (string, error) {
+	var user *db.Users
+	if user = auth.ForContext(ctx); user == nil {
+		panic("1")
+	}
+	dt, _ := time.Parse(time.RFC3339, input.Datetime)
+	if dt.Before(time.Now()) {
+		panic("44")
+	}
+	room := db.GetRooms(DB, []string{input.IDRoom}, user)
+	event := &db.Events{
+		DateTime: dt,
+		Room:     *room[0],
+	}
+	err := event.Create(DB)
+	panicIf(err)
+	return "event_created", nil
 }
 
 func (r *mutationResolver) AddUsersToRoom(ctx context.Context, input model.UsersToRoom) (string, error) {
@@ -236,12 +256,12 @@ func (r *mutationResolver) KickEditorsFromRoom(ctx context.Context, input model.
 	return "users_became_editors", nil
 }
 
-func (r *mutationResolver) DeleteRoom(ctx context.Context, input string) (string, error) {
+func (r *mutationResolver) DeleteRoom(ctx context.Context, id string) (string, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
 		panic("1")
 	}
-	group, err := db.GetModRoom(DB, input, user)
+	group, err := db.GetModRoom(DB, id, user)
 	panicIf(err)
 	err = group.DeleteRoom(DB, user)
 	panicIf(err)
@@ -276,7 +296,7 @@ func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*model.User, error) 
 	return allUsers, nil
 }
 
-func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.User, error) {
+func (r *queryResolver) GetUsers(ctx context.Context, nicknames []string) ([]*model.User, error) {
 	if us := auth.ForContext(ctx); us == nil {
 		panic("1")
 	}
@@ -285,17 +305,17 @@ func (r *queryResolver) GetUsers(ctx context.Context, input []string) ([]*model.
 		gettingUsers []*model.User
 	)
 	usersMap := make(map[string]bool)
-	for _, user := range input {
+	for _, user := range nicknames {
 		usersMap[user] = false
 	}
-	for _, user := range users.GetUsers(DB, input) {
+	for _, user := range users.GetUsers(DB, nicknames) {
 		usersMap[user.Nickname] = false
 		gettingUsers = append(gettingUsers, &model.User{ID: strconv.Itoa(int(user.ID)),
 			Nickname:  user.Nickname,
 			Firstname: user.Firstname, Lastname: user.Lastname,
 			Email: user.Email, Role: strconv.Itoa(int(user.RoleID))})
 	}
-	for _, user := range input {
+	for _, user := range nicknames {
 		if exist := usersMap[user]; !exist {
 			gettingUsers = append(gettingUsers, &model.User{ID: "0", Nickname: user,
 				Firstname: "", Lastname: "",
@@ -332,12 +352,25 @@ func (r *queryResolver) GetMyRooms(ctx context.Context) ([]*model.Room, error) {
 	return getRooms(db.GetMyRooms(DB, user)), nil
 }
 
-func (r *queryResolver) GetRooms(ctx context.Context, input []string) ([]*model.Room, error) {
+func (r *queryResolver) GetRooms(ctx context.Context, id []string) ([]*model.Room, error) {
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
 		panic("1")
 	}
-	return getRooms(db.GetRooms(DB, input, user)), nil
+	return getRooms(db.GetRooms(DB, id, user)), nil
+}
+
+func (r *queryResolver) GetRoomsMonth(ctx context.Context, month string) ([]*model.Room, error) {
+	rooms := []*db.Rooms{}
+	if user := auth.ForContext(ctx); user == nil {
+		panic("1")
+	}
+	events, err := db.GetEventsMonth(DB, month)
+	panicIf(err)
+	for _, room := range events {
+		rooms = append(rooms, &room.Room)
+	}
+	return getRooms(rooms), nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
