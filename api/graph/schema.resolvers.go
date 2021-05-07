@@ -81,7 +81,6 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 }
 
 func (r *mutationResolver) CreateGroup(ctx context.Context, input model.NewGroup) (*model.Group, error) {
-
 	var user *db.Users
 	if user = auth.ForContext(ctx); user == nil {
 		panic("1")
@@ -151,9 +150,10 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, input model.NewRoom) 
 	}
 	hostname, _ := os.Hostname()
 	room := &db.Rooms{
-		Name: input.Name,
-		Link: "https://" + hostname + "/" + input.Name,
-		Pass: input.Password,
+		Name:       input.Name,
+		UniqueName: input.UniqueName,
+		Link:       "https://" + hostname + "/" + input.UniqueName,
+		Pass:       input.Password,
 	}
 	err := room.Create(DB, user)
 	panicIf(err)
